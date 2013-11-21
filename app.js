@@ -6,7 +6,7 @@
 var express = require('express');
 var routes = require('./routes');
 var user = require('./routes/user');
-var network = require('./routes/profile/network');
+var agent = require('./routes/agent');
 var http = require('http');
 var path = require('path');
 var fs = require('fs');
@@ -30,19 +30,14 @@ if ('development' === app.get('env')) {
 	app.use(express.errorHandler());
 }
 
-// read configure
-var config = require('./db/config.json');
-if (typeof(config.endpoint) === 'undefined' || config.endpoint === null || 
-	typeof(config.endpoint.id) === 'undefined' || config.endpoint.id === null ||
-	config.endpoint.id.length !== 36) {
-	config.endpoint = {id: network.createGUID()};
-	fs.writeFile('./db/config.json', JSON.stringify(config));
-}
-
 // configure HTTP endpoint
 app.get('/', routes.index);
 app.get('/users', user.list);
 
+// launch local HTTP server  
 http.createServer(app).listen(app.get('port'), function() {
 	console.log('Express server listening on port ' + app.get('port'));
 });
+
+//start CEPS Agent
+agent.init();
