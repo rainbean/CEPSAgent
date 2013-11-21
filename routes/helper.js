@@ -23,17 +23,28 @@ exports.serverinfo;
  * Read configuration from file
  */
 exports.getConfig = function () {
-	// read configure
 	var fs = require('fs');
-	var _config = require('../db/config.json');
+	var _config;
 	
+	// interesting myth of current path 
+	if (fs.existsSync('./db/config.json')) {
+		_config = require('../db/config.json');
+	}
+	
+	if (!_config) {
+		_config = {user: {id: 1000, name: 'test'}};
+	}
+	
+	/*
 	if (typeof(_config.endpoint) === 'undefined' || _config.endpoint === null ||
 		typeof(_config.endpoint.id) === 'undefined' || _config.endpoint.id === null ||
 		_config.endpoint.id.length !== 36) {
-		_config.endpoint = {id: createGUID()};
-		fs.writeFile('../db/config.json', JSON.stringify(_config));
+	*/
+	if (!_config.endpoint) {
+		_config.endpoint = {id: createGUID(), udp:21000};
 	}
 	
+	//console.log(_config);
 	module.exports.config = _config;
 };
 
@@ -43,6 +54,6 @@ exports.getConfig = function () {
 exports.setConfig = function () {
 	var fs = require('fs');
 	
-	fs.writeFile('../db/config.json', JSON.stringify(module.exports.config));
+	fs.writeFile('./db/config.json', JSON.stringify(module.exports.config));
 };
 
