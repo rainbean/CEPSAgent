@@ -1,8 +1,20 @@
 /**
  * handle HTTP push notification
  */
-function onPush(json) {
-	console.log(json);
+var count = 0;
+function onPush(data) {
+	//var network = require("./profile/network");
+	//console.log(data);
+	var json = JSON.parse(data);
+	console.log(json.Nonce);
+	/*
+	count++;
+	if (count >= 5) {
+		process.exit(1);
+	}
+	// init network profile
+	network.init();
+	*/
 }
 
 /**
@@ -73,7 +85,7 @@ exports.init = function () {
 	var push = require("./push");
 	var network = require("./profile/network");
 
-	// read configure
+	// read configure and write back in case it was empty
 	helper.getConfig();
 	helper.setConfig();
 	//console.log (helper.config);

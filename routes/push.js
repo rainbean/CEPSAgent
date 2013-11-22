@@ -17,17 +17,19 @@ exports.subscribe = function (onNotify) {
 	var url = helper.subaddr + '/' + helper.config.endpoint.id;
 	http.get(url, function(res) {
 		res.setEncoding('utf8');
+		//console.log(res.statusCode);
 		switch (res.statusCode) {
 		case 304:
 			// Time out, reconnect push module
 			// Here in fact is NOT infinite recursive function call, but up to 2 levels
 			// Okay to replace with setTimeout(...) 
 			if (	_subscribed) {
-				module.exports.register(onNotify);
+				module.exports.subscribe(onNotify);
 			}
 			break;
 		case 200:
 			if (_subscribed) {
+				module.exports.subscribe(onNotify);
 				res.on('data', onNotify);
 			}
 			break;
