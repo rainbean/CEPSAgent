@@ -1,0 +1,75 @@
+<!DOCTYPE html><html><head><title></title>
+<link rel='stylesheet' href='/stylesheets/style.css'>
+<link rel="stylesheet" type="text/css" href="/jquery-easyui/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="/jquery-easyui/themes/icon.css">
+<link rel="stylesheet" type="text/css" href="/jquery-easyui/demo/demo.css">
+<script type="application/javascript" src="/jquery-easyui/jquery.min.js"></script>
+<script type="application/javascript" src="/jquery-easyui/jquery.easyui.min.js"></script>
+<script type='application/javascript' src='/javascripts/view.js'></script>
+<script type='text/javascript'>
+  $(document).ready(fnDocumentReadyCB);
+</script>
+</head>
+<body>
+  <h2>Frequent Pattern Mining</h2>
+  <div class="demo-info" style="margin-bottom:10px">
+    <div class="demo-tip icon-tip"></div>
+    <div>你走進超市時, 第一件會選擇購買的物品是?</div>
+  </div>
+  <input id='items-combobox' class="easyui-combobox" name="items">
+<div id='placeholder' style="display:none">
+  <h2 class='s9_title'>More Items to Consider</h2>
+  <div class='container'>
+    <div class='viewed_container'>
+      <div class='viewed_header'>
+        <div>You viewed</div>
+      </div>
+      <div class='viewed_body_outter'>
+        <div class='viewed_body_inner'>
+          <div class='viewed_body'>
+            <span id='viewed_text' class='item_text'></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class='other_container'>
+      <div class='other_header'>
+        <div>Customers who viewed this also viewed</div>
+      </div>
+      <div class='viewed_body_outter'>
+        <div class='viewed_body_inner'>
+          <div id='next_text' class='viewed_body'>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <br>
+            <br>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <br>
+            <br>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+            <span class='item_text2'></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+      <div class="demo-info" style="margin-top:120px">
+        <div class="demo-tip icon-tip"></div>
+        <div>點選推薦物品來採購</div>
+      </div>
+</div>
+</body>
+</html>

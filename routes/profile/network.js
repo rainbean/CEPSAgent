@@ -218,7 +218,7 @@ exports.saveProfile = function () {
 		case 200:
 		case 202:
 			console.log('Save network profile to server correctly');
-			console.log('Please connect to http://localhost:3000/')
+			console.log('Please connect to http://localhost:8000/');
 			break;
 		default:
 			console.log('Failed to save network profile, err=' + res.statusCode);
