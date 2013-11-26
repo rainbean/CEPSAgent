@@ -26,4 +26,20 @@ function isPublicIP(myIP) {
 	return isMatched;
 }
 
+function getNetworkIP() {
+	var os = require('os');
+	var ifaces = os.networkInterfaces();
+	var addresses = [];
+	for (var x in ifaces) {
+		ifaces[x].forEach(function(addr) {
+			if (addr.family === 'IPv4' && !addr.internal) {
+				addresses.push(addr.address);
+			}
+		});
+	}
+	console.log(addresses);
+}
+
+
 console.log(isPublicIP('127.0.0.2'));
+getNetworkIP();

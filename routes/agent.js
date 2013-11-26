@@ -1,20 +1,23 @@
 /**
+ * state machine table
+ */
+function onState(nonce){
+	// to-do implement later
+	var network = require("./profile/network");
+	return network.saveProfile();
+}
+
+/**
  * handle HTTP push notification
  */
-var count = 0;
 function onPush(data) {
-	//var network = require("./profile/network");
+
 	//console.log(data);
 	var json = JSON.parse(data);
-	console.log(json.Nonce);
-	/*
-	count++;
-	if (count >= 5) {
-		process.exit(1);
-	}
-	// init network profile
-	network.init();
-	*/
+	console.log(json);
+	
+	// lookup state machine / function table / nonce table
+	onState(json.Nonce);
 }
 
 /**

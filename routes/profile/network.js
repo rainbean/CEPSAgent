@@ -34,18 +34,21 @@ function isProfileReady() {
 	return false;
 }
 
+/**
+ * Check whether the IP is on-use network IP
+ * @param myIP
+ * @returns
+ */
 function isPublicIP(myIP) {
-	var os = require('os');
-	var ifaces = os.networkInterfaces();
-	var isMatched = false;
-	for (var x in ifaces) {
-		ifaces[x].forEach(function(details) {
-			if (details.family === 'IPv4' && details.address === myIP) {
-				isMatched = true;
-			}
-		});
+	var helper = require("../helper");
+	//Compare whether parameter matches any network IP
+	var addr = helper.getNetworkIP();
+	for (var x in addr) {
+		if (x === myIP) {
+			return true;
+		}
 	}
-	return isMatched;
+	return false;
 }
 
 /**
@@ -70,16 +73,16 @@ function getExtPortAsync() {
 	var eidBytes = helper.toBytes(helper.config.endpoint.id);
 	eidBytes.copy(msg, constant.LEN_MIN_CEPS_MSG); // end point GUID
 
-	console.log(msg);
+	//console.log(msg);
 	
-	console.log('send udp message');
+	//console.log('send udp message');
 	var client = dgram.createSocket("udp4");
 	client.bind(helper.config.endpoint.port, function() {
 		client.send(msg, 0, msg.length, 
 				helper.serverinfo.cms[0].Port[0], 
 				helper.serverinfo.cms[0].Host, function(err, bytes) {
 			client.close();
-			console.log('out udp message: err = ' + err + ', bytes = ' +  bytes);
+			console.log('Send out udp message: err = ' + err + ', bytes = ' +  bytes);
 		});
 	});
 	
@@ -150,6 +153,56 @@ exports.init = function (onDone) {
 		
 		// start to negociate network profile
 		// check whether it's public ip
-		isPublicAccessible(onDone); 
+		isPublicAccessible(onDone);
 	});
+};
+
+/**
+ * Save network profile
+ */
+exports.saveProfile = function () {
+	var http = require('http');
+	var helper = require("../helper");
+	
+	// ToDo: handle multiple ip case 
+	var addr = helper.getNetworkIP();
+	
+	// Make a HTTP POST request
+	// POST /v1/NetworkProfile/{EndpointID}/{NetworkID}
+	var data = {Version:1,
+			UDP:{Blocked:false, Public:false, UPnP:{Enabled:false},
+				Router:{PortChange:true, PortRestricted:true}},
+			Location:{ExtIP:helper.serverinfo.requestor.IP,
+				LocalIP:addr[0],
+				LocalUDPPort:helper.config.endpoint.udp}};
+	var datastr = JSON.stringify(data);
+	
+	var options = {
+			hostname: helper.serverinfo.cms[0].Host,
+			port: 80,
+			path: '/cms/NetworkProfile/' + helper.config.endpoint.id + '/' + 'pseudo',
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Content-Length': datastr.length
+			}
+		};
+
+	var req = http.request(options, function(res) {
+		res.setEncoding('utf8');
+		//console.log(res.statusCode);
+		switch (res.statusCode) {
+		case 200:
+		case 202:
+			console.log('Save network profile to server correctly');
+			break;
+		default:
+			console.log('Failed to save network profile, err=' + res.statusCode);
+			break;
+		}
+	}).on('error', function(e) {
+		console.log("Network profile error: " + e.message);
+	});
+	req.write(datastr); // write data to request body
+	req.end();
 };
