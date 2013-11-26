@@ -4,7 +4,7 @@
 function onState(nonce){
 	// to-do implement later
 	var network = require("./profile/network");
-	return network.saveProfile();
+	return network.saveProfile(); // ready for listen/request connection
 }
 
 /**

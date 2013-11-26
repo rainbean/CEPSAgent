@@ -140,12 +140,35 @@ function isPublicAccessible(onDone) {
 }
 
 /**
+ * Register device
+ */
+function registerDevice() {
+	var http = require('http');
+	var helper = require("../helper");
+	
+	// Make a HTTP POST request
+	// POST /User/{UserID}/{EndpointID}
+	
+	var options = {
+			hostname: 'ceps.cloudapp.net',
+			port: 80,
+			path: '/cms/User/' + helper.config.user.id + '/' + helper.config.endpoint.id,
+			method: 'POST',
+		};
+
+	var req = http.request(options);
+	req.end();
+}
+
+/**
  * Init network profile
  * 
  * @param onDone callback function to send event to when it's done 
  */
 exports.init = function (onDone) {
 	serverInfo(function() {
+		// registerDevice(); // place holder
+		
 		// check whether need to create network profile
 		if (isProfileReady()) {
 			return onDone();
