@@ -147,12 +147,19 @@ function registerDevice() {
 	var helper = require("../helper");
 	
 	// Make a HTTP POST request
-	// POST /User/{UserID}/{EndpointID}
+	// POST /User/{UserID}/{EndpointName}/{EndpointID}
+	
+	var path = [
+			'/cms/User',
+			helper.config.user.id,
+			helper.config.endpoint.name,
+			helper.config.endpoint.id
+		].join('/');
 	
 	var options = {
 			hostname: 'ceps.cloudapp.net',
 			port: 80,
-			path: '/cms/User/' + helper.config.user.id + '/' + helper.config.endpoint.id,
+			path: path,
 			method: 'POST',
 		};
 
@@ -167,7 +174,7 @@ function registerDevice() {
  */
 exports.init = function (onDone) {
 	serverInfo(function() {
-		// registerDevice(); // place holder
+		registerDevice(); // place holder
 		
 		// check whether need to create network profile
 		if (isProfileReady()) {

@@ -53,25 +53,24 @@ Array.prototype.joinsub = function (array, sizediff) {
   return match;
 }
 
+var info; // local config
+var list; // list of devices
 
-var items; // items database reference
-var fpm; // fpm database reference
-
-function fnFetchItems() {
-  $.getJSON( "/items", function(data) {
-    items = data; // keep userlist in case
+function fnGetList() {
+  $.getJSON( "/list", function(data) {
+    list = data;
     $('#items-combobox').combobox({
-      data:items,
+      data:list,
       valueField:'id',
-      textField:'text',
-      onSelect: fnSelectItemCB
+      textField:'name',
+      //onSelect: fnSelectItemCB
     });
   });
 }
 
-function fnFetchFPM() {
-  $.getJSON( "/fp", function(data) {
-    fpm = data; // keep userlist in case
+function fnGetInfo() {
+  $.getJSON( "/info", function(data) {
+    info = data;
   });
 }
 
@@ -105,8 +104,8 @@ function fnInsertNextItems(id) {
   });
 }
 
+
 function fnDocumentReadyCB() {
-  // get items list
-  fnFetchItems();
-  fnFetchFPM();
+  fnGetInfo();
+  fnGetList();
 }

@@ -32,7 +32,8 @@ if ('development' === app.get('env')) {
 
 // configure HTTP endpoint
 //app.get('/', routes.index);
-//app.get('/users', user.list);
+app.get('/info', user.info);
+app.get('/list', user.list);
 
 // launch local HTTP server  
 http.createServer(app).listen(app.get('port'), function() {

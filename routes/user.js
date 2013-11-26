@@ -1,8 +1,18 @@
+/*
+ * GET device info.
+ */
+exports.info = function(req, res) {
+	var helper = require("../helper");
+	
+	res.send(helper.config);
+};
 
 /*
- * GET users listing.
+ * GET device listing.
  */
-
-exports.list = function(req, res){
-  res.send("respond with a resource");
+exports.list = function(req, res) {
+	var helper = require("../helper");
+	
+	// redirect to CMS server 
+	res.redirect(helper.cmsaddr + '/User/' + helper.config.user.id);
 };

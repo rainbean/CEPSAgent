@@ -48,6 +48,7 @@ exports.serverinfo;
  */
 exports.getConfig = function () {
 	var fs = require('fs');
+	var os = require('os');
 	var _config;
 	
 	// interesting myth of current path 
@@ -65,7 +66,11 @@ exports.getConfig = function () {
 		_config.endpoint.id.length !== 36) {
 	*/
 	if (!_config.endpoint) {
-		_config.endpoint = {id: module.exports.createGUID(), udp:21000};
+		_config.endpoint = {
+				id: module.exports.createGUID(),
+				name: os.hostname(), // hostname as default
+				udp:21000 // default port, will adjust to binding result later
+			};
 	}
 	
 	//console.log(_config);
