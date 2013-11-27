@@ -5,7 +5,7 @@
  */
 function serverInfo(onDone) {
 	var http = require('http');
-	var helper = require("../helper");
+	var helper = require("./helper");
 	
 	var url = helper.cmsaddr + '/ServerInfo/';
 	http.get(url, function(res) {
@@ -40,7 +40,7 @@ function isProfileReady() {
  * @returns
  */
 function isPublicIP(myIP) {
-	var helper = require("../helper");
+	var helper = require("./helper");
 	//Compare whether parameter matches any network IP
 	var addr = helper.getNetworkIP();
 	for (var x in addr) {
@@ -57,8 +57,8 @@ function isPublicIP(myIP) {
 function getExtPortAsync() {
 	// Get external port
 	var dgram = require('dgram');
-	var helper = require('../helper');
-	var constant = require('../constants');
+	var helper = require('./helper');
+	var constant = require('./constants');
 	
 	var msg = new Buffer(constant.LEN_REQ_GET_EXT_PORT);
 	
@@ -115,7 +115,7 @@ function isUPnPAccessible(onDone) {
  */
 function isPublicAccessible(onDone) {
 	var http = require('http');
-	var helper = require("../helper");
+	var helper = require("./helper");
 	
 	if (!isPublicIP(helper.serverinfo.requestor.IP)) {
 		// not public IP, go next check
@@ -144,7 +144,7 @@ function isPublicAccessible(onDone) {
  */
 function registerDevice() {
 	var http = require('http');
-	var helper = require("../helper");
+	var helper = require("./helper");
 	
 	// Make a HTTP POST request
 	// POST /User/{UserID}/{EndpointName}/{EndpointID}
@@ -192,7 +192,7 @@ exports.init = function (onDone) {
  */
 exports.saveProfile = function () {
 	var http = require('http');
-	var helper = require("../helper");
+	var helper = require("./helper");
 	
 	// ToDo: handle multiple ip case 
 	var addr = helper.getNetworkIP();

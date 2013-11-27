@@ -1,3 +1,6 @@
+//////////////////////////////////////////////////
+// Array Helper Functions
+//////////////////////////////////////////////////
 //attach the .contains method to Array's prototype to call it on any array
 Array.prototype.contains = function (array, sizediff) {
 	// if the other array is a falsy value, return
@@ -53,6 +56,10 @@ Array.prototype.joinsub = function (array, sizediff) {
 	return match;
 }
 
+//////////////////////////////////////////////////
+// AJAX handler/callback functions
+//////////////////////////////////////////////////
+
 var info; // local config
 var list; // list of devices
 
@@ -63,7 +70,7 @@ function fnGetList() {
 			data:list,
 			valueField:'id',
 			textField:'name',
-			//onSelect: fnSelectItemCB
+			onSelect: fnSelectItemCB
 		});
 	});
 }
@@ -74,35 +81,24 @@ function fnGetInfo() {
 	});
 }
 
-var stack = [];
-function onSelectNextCB(id) {
-	stack.push(id);
-	//console.log(stack);
-	var t = $('#viewed_text').html();
-	$('#viewed_text').html(t + '<br>' + items[id].text);
-	fnInsertNextItems(id);
-	return false;
-}
-
 function fnSelectItemCB(item) {
-	stack = [item.id];
-	$('#placeholder').show();
-	$('#viewed_text').text(item.text);
-	fnInsertNextItems(item.id);
-}
-
-function fnInsertNextItems(id) {
-	var list = fpm[stack[0]].joinsub(stack,1);
-	//console.log(list);
-	$('#next_text span').html(function (index) {
-		if (!list || index >= list.length)
-			return '';
-
-		var next = list[index];
-		var text = items[list[index]].text;
-		return '<a href="#" onclick="javascript:onSelectNextCB(' + next + ')">' + text +'</a>';
+	$.messager.progress({
+		title:'Connecting to ' + item.name,
+		msg:'Processing, Please Wait ...'
+	});
+		
+	$.getJSON( "/link/" + item.id, function(data) {
+		console.log(data);
+		// enforce a bit delay to show progress dialog, just for demo
+		setTimeout(function() {
+			$.messager.progress('close');
+		}, 10000);
 	});
 }
+
+//////////////////////////////////////////////////
+// HTML action functions
+//////////////////////////////////////////////////
 
 
 function fnDocumentReadyCB() {

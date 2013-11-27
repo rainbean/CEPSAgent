@@ -34,6 +34,7 @@ if ('development' === app.get('env')) {
 //app.get('/', routes.index);
 app.get('/info', user.info);
 app.get('/list', user.list);
+app.get('/link/:EndpointID', user.link);
 
 // launch local HTTP server  
 http.createServer(app).listen(app.get('port'), function() {

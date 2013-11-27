@@ -3,7 +3,7 @@
  */
 function onState(nonce){
 	// to-do implement later
-	var network = require("./profile/network");
+	var network = require("./networkprofile");
 	return network.saveProfile(); // ready for listen/request connection
 }
 
@@ -86,7 +86,7 @@ function initUDPD() {
 exports.init = function () {
 	var helper = require("./helper");
 	var push = require("./push");
-	var network = require("./profile/network");
+	var network = require("./networkprofile");
 
 	// read configure and write back in case it was empty
 	helper.getConfig();
