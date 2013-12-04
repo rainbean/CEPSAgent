@@ -41,10 +41,11 @@ function onMessage(msg, remote) {
 	if (msg.length < constant.LEN_MIN_CEPS_MSG) {
 		return; // drop message silently
 	}
-    
+
 	if (constant.CEPS_MAGIC_CODE !== msg.readUInt32BE(0)) {
 		return; // invalid magic code
 	}
+
 	if (1 !== msg.readUInt8(4)) {
 		return; // verify version
 	}
@@ -66,6 +67,7 @@ function onMessage(msg, remote) {
 	if (network.onMessage(json)) {
 		return;
 	}
+	
 	if (session.onMessage(json)) {
 		return;
 	}
@@ -91,7 +93,8 @@ function initUDPD() {
 	
 	udpd.on('message', onMessage);
 
-	udpd.bind(helper.config.endpoint.udp, '127.0.0.1');
+	// udpd.bind(helper.config.endpoint.udp, '127.0.0.1'); // bind loopback interface
+	udpd.bind(helper.config.endpoint.udp); // bind all interface
 }
 
 /**

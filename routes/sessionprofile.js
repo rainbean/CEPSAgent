@@ -42,6 +42,7 @@ function onListenTimeout(nonce) {
  */
 function sendUDPMessage(msg) {
 	var dgram = require('dgram');
+	var helper = require('./helper');
 	var constant = require("./constants");
 
 	var udp = new Buffer(constant.LEN_REQ_SEND_MSG);
@@ -51,7 +52,8 @@ function sendUDPMessage(msg) {
 	udp.writeUInt8(1, 4); // version
 	udp.writeUInt16BE(constant.REQ_SEND_MSG, 5); // msg type
 	udp.writeUInt16BE(0x0000, 7); // zero body length
-	udp.write(msg.Nonce, 9, 16); // msg nonce
+	var nonceBytes = helper.toBytes(msg.Nonce);
+	nonceBytes.copy(udp, 9);
 		
 	var client = dgram.createSocket("udp4");
 	client.bind(msg.LocalPort, function() {
@@ -65,6 +67,7 @@ function sendUDPMessage(msg) {
 		for (var i=0; i<count; ++i) {
 			client.send(udp, 0, udp.length, msg.Destination.Port, msg.Destination.IP, function(err, bytes) {
 				done --;
+				console.log('Send out udp message: err = ' + err + ', bytes = ' +  bytes);
 				if (done === 0) {
 					client.close();
 				}
@@ -237,7 +240,7 @@ exports.onMessage = function(msg) {
 	var http = require('http');
 	var helper = require("./helper");
 	var constant = require("./constants");
-
+	
 	switch (msg.Type) {
 	case constant.REQ_SEND_MSG:
 		// check if nonce matchs any listener
