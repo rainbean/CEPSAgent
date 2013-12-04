@@ -1,23 +1,24 @@
-/**
- * state machine table
- */
-function onState(nonce){
-	// to-do implement later
-	var network = require("./networkprofile");
-	return network.saveProfile(); // ready for listen/request connection
-}
 
 /**
  * handle HTTP push notification
+ * @param data HTTP body object 
+ * @return true if message handled, false for next handler
  */
 function onPush(data) {
-
-	//console.log(data);
+	var network = require("./networkprofile");
+	var session = require("./sessionprofile");
+	
 	var json = JSON.parse(data);
 	console.log(json);
 	
-	// lookup state machine / function table / nonce table
-	onState(json.Nonce);
+	if (network.onPush(json)) {
+		return;
+	}
+	if (session.onPush(json)) {
+		return;
+	}
+
+	console.log ('Unserved push message: ' + json.type);
 }
 
 /**
@@ -26,10 +27,14 @@ function onPush(data) {
  * @param msg Received UDP message 
  * @param remote Remote peer address 
  */
-function onUDP(msg, remote) {
-	var http = require('http');
+function onMessage(msg, remote) {
 	var S = require('string');
 	var constant = require("./constants");
+	var helper = require('./helper.js');
+	var network = require("./networkprofile");
+	var session = require("./sessionprofile");
+
+	var json = {Remote: remote};
 
 	console.log(remote.address + ':' + remote.port +' - ' + msg.length);
     
@@ -44,17 +49,26 @@ function onUDP(msg, remote) {
 		return; // verify version
 	}
 	
-	var cmd = msg.readUInt16BE(5); // msg type
-	var len = msg.readUInt16BE(7); // msg length
-	var nonce = msg.toString('utf8', 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
-	nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
+	json.Type = msg.readUInt16BE(5); // msg type
+	var len = msg.readUInt16BE(7); // data length
 	
-	if (constant.REP_GET_EXT_PORT !== cmd) {
-		return; // unsupported command
+	var buf = new Buffer(16);
+	msg.copy(buf, 0, 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
+	var nonce = helper.toString(buf);
+	json.Nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
+	
+	if (len > 0) {
+		json.Data = new Buffer(len);
+		msg.copy(json.Data, 0, constant.LEN_MIN_CEPS_MSG, constant.LEN_MIN_CEPS_MSG+len); // msg data
 	}
 	
-	console.log('onUDP: nonce=' + nonce);
-
+	// call handlers
+	if (network.onMessage(json)) {
+		return;
+	}
+	if (session.onMessage(json)) {
+		return;
+	}
 }
 
 
@@ -75,10 +89,10 @@ function initUDPD() {
 		}
 	});
 	
-	udpd.on('message', onUDP);
+	udpd.on('message', onMessage);
 
 	udpd.bind(helper.config.endpoint.udp, '127.0.0.1');
-};
+}
 
 /**
  * Initialize CEPS Agent  

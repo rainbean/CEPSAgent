@@ -51,6 +51,68 @@ function isPublicIP(myIP) {
 	return false;
 }
 
+
+/**
+ * See if nonce is valid or has been served
+ * @param nonce
+ */
+function isValidNonce(nonce) {
+	// to-do implement later
+	return true;
+}
+
+
+/**
+ * Save network profile
+ */
+function saveProfile() {
+	var http = require('http');
+	var helper = require("./helper");
+	
+	// ToDo: handle multiple ip case 
+	var addr = helper.getNetworkIP();
+	
+	// Make a HTTP POST request
+	// POST /v1/NetworkProfile/{EndpointID}/{NetworkID}
+	var data = {Version:1,
+			UDP:{Blocked:false, Public:false, UPnP:{Enabled:false},
+				Router:{PortChange:true, PortRestricted:true}},
+			Location:{ExtIP:helper.serverinfo.requestor.IP,
+				LocalIP:addr[0],
+				LocalUDPPort:helper.config.endpoint.udp}};
+	var datastr = JSON.stringify(data);
+	
+	var options = {
+			hostname: helper.serverinfo.cms[0].Host,
+			port: 80,
+			path: '/cms/NetworkProfile/' + helper.config.endpoint.id + '/' + 'pseudo',
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Content-Length': datastr.length
+			}
+		};
+
+	var req = http.request(options, function(res) {
+		res.setEncoding('utf8');
+		//console.log(res.statusCode);
+		switch (res.statusCode) {
+		case 200:
+		case 202:
+			console.log('Save network profile to server correctly');
+			console.log('Please connect to http://localhost:8000/');
+			break;
+		default:
+			console.log('Failed to save network profile, err=' + res.statusCode);
+			break;
+		}
+	}).on('error', function(e) {
+		console.log("Network profile error: " + e.message);
+	});
+	req.write(datastr); // write data to request body
+	req.end();
+}
+
 /**
  * Detect whether hole punching is feasible
  */
@@ -187,53 +249,44 @@ exports.init = function (onDone) {
 	});
 };
 
-/**
- * Save network profile
- */
-exports.saveProfile = function () {
-	var http = require('http');
-	var helper = require("./helper");
-	
-	// ToDo: handle multiple ip case 
-	var addr = helper.getNetworkIP();
-	
-	// Make a HTTP POST request
-	// POST /v1/NetworkProfile/{EndpointID}/{NetworkID}
-	var data = {Version:1,
-			UDP:{Blocked:false, Public:false, UPnP:{Enabled:false},
-				Router:{PortChange:true, PortRestricted:true}},
-			Location:{ExtIP:helper.serverinfo.requestor.IP,
-				LocalIP:addr[0],
-				LocalUDPPort:helper.config.endpoint.udp}};
-	var datastr = JSON.stringify(data);
-	
-	var options = {
-			hostname: helper.serverinfo.cms[0].Host,
-			port: 80,
-			path: '/cms/NetworkProfile/' + helper.config.endpoint.id + '/' + 'pseudo',
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Content-Length': datastr.length
-			}
-		};
 
-	var req = http.request(options, function(res) {
-		res.setEncoding('utf8');
-		//console.log(res.statusCode);
-		switch (res.statusCode) {
-		case 200:
-		case 202:
-			console.log('Save network profile to server correctly');
-			console.log('Please connect to http://localhost:8000/');
-			break;
-		default:
-			console.log('Failed to save network profile, err=' + res.statusCode);
-			break;
+/**
+ * handle HTTP push notification
+ * @param json JSON object 
+ * @return true if message handled, false for next handler
+ */
+exports.onPush = function(msg) {
+	var constant = require('./constants');
+	
+	switch (msg.Type) {
+	case constant.CMD_ACK_EXT_PRT:
+		// to-do implement later
+		// short cut: bypass other network profile detect, and end it upon receiving RepGetExtPort reply
+		
+		// {Version: 1, Type: constant.CMD_ACK_EXT_PRT, Nonce: nonce, Port: remote.port};
+		if (!isValidNonce(msg.Nonce)) {
+			return false; // ignore invalid nonce command, either served or error
 		}
-	}).on('error', function(e) {
-		console.log("Network profile error: " + e.message);
-	});
-	req.write(datastr); // write data to request body
-	req.end();
+		saveProfile(); // ready for listen/request connection
+		return true;
+	default:
+		return false;
+	}
+};
+
+/**
+ * UDP message handler
+ * 
+ * @param json Received UDP message in JSON 
+ * @return true if message handled, false for next handler
+ */
+exports.onMessage = function(msg) {
+	var constant = require("./constants");
+
+	switch (msg.Type) {
+	case constant.REP_GET_EXT_PORT:
+		return true;
+	default:
+		return false;
+	}
 };
