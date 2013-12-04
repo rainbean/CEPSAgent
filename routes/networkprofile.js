@@ -22,7 +22,7 @@ function serverInfo(onDone) {
 			break;
 		}
 	}).on('error', function(e) {
-		console.log("Got server info error: " + e.message);
+		console.log("Failed to send HTTP request, error: " + e.message);
 	});
 }
 
@@ -194,7 +194,7 @@ function isPublicAccessible(onDone) {
 		'Count=10'
 	].join('&');
 	http.get(url).on('error', function(e) {
-		console.log("Got server info error: " + e.message);
+		console.log("Failed to send HTTP request, error: " + e.message);
 	});
 	
 	// ToDo: do async check in onUDP() to invoke onDone 

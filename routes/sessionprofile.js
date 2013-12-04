@@ -9,15 +9,68 @@ var listening = [];
  * @param nonce
  */
 function onListenTimeout(nonce) {
+	var http = require('http');
+	var helper = require("./helper");
+	var constant = require('./constants');
+	
+	// check if nonce matchs any listener
+	var listener;
 	for (var i = 0; i < listening.length; i++) {
 		if (listening[i].Nonce === nonce) {
-			// todo 
-			
-			// remove it from array
-			listening.splice(i, 1);
-			return; // end loop
+			listener = listening[i];
+			listening.splice(i, 1); // remove listener
+			break; // end loop
 		}
 	}
+	
+	// reply listener timeout with error
+	if (listener && listener.Reply && listener.Reply.Error) {
+		var url = helper.cmsaddr + listener.Reply.Error + '?ErrorCode=' + 408 + '&ErrorDesc=Timeout';
+		http.get(url, onResponse).on('error', function(e) {
+			console.log("Failed to send HTTP request, error: " + e.message);
+			// abort session negociation on error
+			onInitDoneCallback(e);
+		});
+	}
+}
+
+
+/**
+ * Send "ReqSendMsg" message to specific address and port from specific local port, N times continuously
+ *  
+ * @param msg a json object, syntax: {LocalPort:8080, Destination: {IP: "140.1.1.1", Port: 38080}, Nonce:"Rose", Count: 5 }
+ */
+function sendUDPMessage(msg) {
+	var dgram = require('dgram');
+	var constant = require("./constants");
+
+	var udp = new Buffer(constant.LEN_REQ_SEND_MSG);
+	
+	udp.fill(0x00); // clear with zero 
+	udp.writeUInt32BE(constant.CEPS_MAGIC_CODE, 0);  // magic code
+	udp.writeUInt8(1, 4); // version
+	udp.writeUInt16BE(constant.REQ_SEND_MSG, 5); // msg type
+	udp.writeUInt16BE(0x0000, 7); // zero body length
+	udp.write(msg.Nonce, 9, 16); // msg nonce
+		
+	var client = dgram.createSocket("udp4");
+	client.bind(msg.LocalPort, function() {
+		var count = msg.Count;
+		if (typeof(count) === 'undefined' || count === null ||
+				count <= 0 || count >= 20) {
+			count = 1; // reset to once
+		}
+		
+		var done = count;
+		for (var i=0; i<count; ++i) {
+			client.send(udp, 0, udp.length, msg.Destination.Port, msg.Destination.IP, function(err, bytes) {
+				done --;
+				if (done === 0) {
+					client.close();
+				}
+			});
+		}
+	});
 }
 
 /**
@@ -32,10 +85,7 @@ function onCommand(msg) {
 
 	switch (msg.Type) {
 	case constant.CMD_LISTEN_MSG:
-		// Syntax: {"Version":1,"Type":"CmdListenMsg","SocketType":"UDP","LocalPort":8080, "Nonce":"Rose","Timeout":60}
-
-		// create new listener
-		// set timeout event
+		// create new listener with timeout
 		if (msg.Reply && msg.Timeout > 0) {
 			var listener = {TimeoutID: null, Nonce: msg.Nonce, Reply: msg.Reply};
 			listener.TimeoutID = setTimeout(onListenTimeout, 1000 * msg.Timeout, msg.Nonce);
@@ -45,18 +95,32 @@ function onCommand(msg) {
 		// reply listener ready 
 		if (msg.Reply && msg.Reply.Ready) {
 			http.get(helper.cmsaddr + msg.Reply.Ready, onResponse).on('error', function(e) {
-				console.log("Got server info error: " + e.message);
+				console.log("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
 			});
 		}
-		break;
+		return true;
 	case constant.CMD_SEND_MSG:
+		// Send "ReqSendMsg" message
+		sendUDPMessage(msg);
+		
+		// reply server
+		if (msg.Reply && msg.Reply.OK) {
+			http.get(helper.cmsaddr + msg.Reply.OK, onResponse).on('error', function(e) {
+				console.log("Failed to send HTTP request, error: " + e.message);
+				// abort session negociation on error
+				onInitDoneCallback(e);
+			});
+		}
+		return true;
+	case constant.CMD_SAVE_SESSION:
+		// {"Version":1,"Type":"CmdSaveSession","SocketType":"UDP","LocalPort":8080,"Destination":{"IP":"140.1.1.1","Port":38080},"Nonce":"Rose"}
+		onInitDoneCallback(null, 'Session establish complete');
 		return true;
 	case constant.CMD_GET_EXT_PORT:
 	case constant.CMD_MAP_UPNP:
-	case constant.CMD_SAVE_SESSION:
-		break;
+		return false;
 	default:
 		return false;
 	}
@@ -124,7 +188,7 @@ exports.init = function (eid, onDone) {
 	].join('/');
 	
 	http.get(url, onResponse).on('error', function(e) {
-		console.log("Got server info error: " + e.message);
+		console.log("Failed to send HTTP request, error: " + e.message);
 		// abort session negociation on error
 		onInitDoneCallback(e);
 	});
@@ -170,10 +234,31 @@ exports.onPush = function(msg) {
  * @return true if message handled, false for next handler
  */
 exports.onMessage = function(msg) {
+	var http = require('http');
+	var helper = require("./helper");
 	var constant = require("./constants");
 
 	switch (msg.Type) {
-	case constant.REP_GET_EXT_PORT:
+	case constant.REQ_SEND_MSG:
+		// check if nonce matchs any listener
+		var listener;
+		for (var i = 0; i < listening.length; i++) {
+			if (listening[i].Nonce === msg.Nonce) {
+				listener = listening[i];
+				listening.splice(i, 1);	// remove listener 
+				break; // end loop
+			}
+		}
+
+		// reply listener timeout with error
+		if (listener && listener.Reply && listener.Reply.OK) {
+			var url = helper.cmsaddr + listener.Reply.OK + '&MsgSrcIP=' + msg.Remote.address + '&MsgSrcPort=' + msg.Remote.port;
+			http.get(url, onResponse).on('error', function(e) {
+				console.log("Failed to send HTTP request, error: " + e.message);
+				// abort session negociation on error
+				onInitDoneCallback(e);
+			});
+		}
 		return true;
 	default:
 		return false;
