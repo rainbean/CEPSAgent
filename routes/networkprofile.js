@@ -7,7 +7,7 @@ function serverInfo(onDone) {
 	var http = require('http');
 	var helper = require("./helper");
 	
-	var url = helper.cmsaddr + '/ServerInfo/';
+	var url = helper.config.server.cms + '/ServerInfo/';
 	http.get(url, function(res) {
 		switch (res.statusCode) {
 		case 200:
@@ -187,7 +187,7 @@ function isPublicAccessible(onDone) {
 	// ask server to check whether UDP is reachable
 	// GET /v1/Message/{SocketType}?Nonce={Nonce}&SrcPort={SrcPort}&DestIP={DestIP}&DestPort={DestPort}&Count={Count}
 	var url = [
-		helper.cmsaddr + '/Message/UDP?Nonce=' + 'rose',
+		helper.config.server.cms + '/Message/UDP?Nonce=' + 'rose',
 		'SrcPort=' + helper.serverinfo.cms[0].Port[0],
 		'DestIP=' + helper.serverinfo.requestor.IP,
 		'DestPort=' + helper.config.endpoint.port,

@@ -108,7 +108,12 @@ exports.init = function () {
 	// read configure and write back in case it was empty
 	helper.getConfig();
 	helper.setConfig();
-	//console.log (helper.config);
+	
+	// check server setting
+	if (!helper.config.server) {
+		console.log('Invalid server config, please modify config.json!!!');
+		process.exit(1);
+	}
 	
 	// subscribe push channel
 	push.subscribe(onPush);

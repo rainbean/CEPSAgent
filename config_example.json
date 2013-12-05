@@ -1,0 +1,12 @@
+{
+  "user": {
+    "id": 1000,
+    "name": "test"
+  },
+  "server": {
+    "address": "ceps.cloudapp.net",
+    "cms": "http://ceps.cloudapp.net/cms",
+    "push": "http://ceps.cloudapp.net/pub?id=",
+    "sub": "http://ceps.cloudapp.net/sub"
+  }
+}

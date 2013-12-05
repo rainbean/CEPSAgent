@@ -33,7 +33,7 @@ function onListenTimeout(nonce) {
 	
 	// reply listener timeout with error
 	if (listener && listener.Reply && listener.Reply.Error) {
-		var url = helper.cmsaddr + listener.Reply.Error + '?ErrorCode=' + 408 + '&ErrorDesc=Timeout';
+		var url = helper.config.server.cms + listener.Reply.Error + '?ErrorCode=' + 408 + '&ErrorDesc=Timeout';
 		http.get(url, onResponse).on('error', function(e) {
 			console.log("Failed to send HTTP request, error: " + e.message);
 			// abort session negociation on error
@@ -105,7 +105,7 @@ function onCommand(msg) {
 		
 		// reply listener ready 
 		if (msg.Reply && msg.Reply.Ready) {
-			http.get(helper.cmsaddr + msg.Reply.Ready, onResponse).on('error', function(e) {
+			http.get(helper.config.server.cms + msg.Reply.Ready, onResponse).on('error', function(e) {
 				console.log("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
@@ -118,7 +118,7 @@ function onCommand(msg) {
 		
 		// reply server
 		if (msg.Reply && msg.Reply.OK) {
-			http.get(helper.cmsaddr + msg.Reply.OK, onResponse).on('error', function(e) {
+			http.get(helper.config.server.cms + msg.Reply.OK, onResponse).on('error', function(e) {
 				console.log("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
@@ -191,7 +191,7 @@ exports.init = function (eid, onDone) {
 	// ask server to init session negociation
 	// GET /v1/SessionProfile/{SocketType}/{Requestor's EndpointID}/{Destination's EndpointID}	
 	var url = [
-		helper.cmsaddr,
+		helper.config.server.cms,
 		'SessionProfile',
 		'UDP',
 		helper.config.endpoint.id,
@@ -263,7 +263,7 @@ exports.onMessage = function(msg) {
 
 		// reply listener timeout with error
 		if (listener && listener.Reply && listener.Reply.OK) {
-			var url = helper.cmsaddr + listener.Reply.OK + '&MsgSrcIP=' + msg.Remote.address + '&MsgSrcPort=' + msg.Remote.port;
+			var url = helper.config.server.cms + listener.Reply.OK + '&MsgSrcIP=' + msg.Remote.address + '&MsgSrcPort=' + msg.Remote.port;
 			http.get(url, onResponse).on('error', function(e) {
 				console.log("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error

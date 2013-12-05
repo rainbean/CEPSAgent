@@ -39,8 +39,6 @@ exports.toString = function(bytes) {
 
 // configuration store
 exports.config = {};
-exports.cmsaddr = 'http://ceps.cloudapp.net/cms';
-exports.subaddr = 'http://ceps.cloudapp.net/sub';
 exports.serverinfo;
 
 /**
@@ -52,19 +50,14 @@ exports.getConfig = function () {
 	var _config;
 	
 	// interesting myth of current path 
-	if (fs.existsSync('./db/config.json')) {
-		_config = require('../db/config.json');
+	if (fs.existsSync('./config.json')) {
+		_config = require('../config.json');
 	}
 	
 	if (!_config) {
 		_config = {user: {id: 1000, name: 'test'}};
 	}
 	
-	/*
-	if (typeof(_config.endpoint) === 'undefined' || _config.endpoint === null ||
-		typeof(_config.endpoint.id) === 'undefined' || _config.endpoint.id === null ||
-		_config.endpoint.id.length !== 36) {
-	*/
 	if (!_config.endpoint) {
 		_config.endpoint = {
 				id: module.exports.createGUID(),
@@ -83,7 +76,7 @@ exports.getConfig = function () {
 exports.setConfig = function () {
 	var fs = require('fs');
 	
-	fs.writeFile('./db/config.json', JSON.stringify(module.exports.config));
+	fs.writeFile('./config.json', JSON.stringify(module.exports.config,null,2)); // make json file pretty
 };
 
 

@@ -15,7 +15,7 @@ exports.list = function(req, res) {
 	
 	// option1: redirect to CMS server, cross-domain AJAX request
 	// HTTP header Access-Control-Allow-Origin is required 
-	res.redirect(helper.cmsaddr + '/User/' + helper.config.user.id);
+	res.redirect(helper.config.server.cms + '/User/' + helper.config.user.id);
 	
 	// option2: todo implement later, fetch in separate HTTP
 };
