@@ -1,6 +1,12 @@
 
 var _subscribed = false;
 
+var asyncInvoke = function(callback, data){
+	process.nextTick(function(){
+		callback(data);
+	});
+};
+
 /**
  * Subscribe long polling notification channel, 
  * and keep it alive until unsubscribe is called. 
@@ -25,21 +31,15 @@ function longPolling(onNotify) {
 			// to setTimeout(fn, 0), it's much more efficient. It typically runs before any other I/O 
 			// events fire, but there are some exceptions.
 			
-			if (	_subscribed) {
-				process.nextTick(function() { // register to next event loop
-					longPolling(onNotify);
-				});
+			if (_subscribed) {
+				asyncInvoke(longPolling, onNotify);
 			}
 			break;
 		case 200:
 			if (_subscribed) {
-				process.nextTick(function() { // register to next event loop, before real handle data
-					longPolling(onNotify);
-				});
+				asyncInvoke(longPolling, onNotify);
 				res.on('data', function(data) { 
-					process.nextTick(function() { // register to next event loop to handle data
-						onNotify(data);
-					});
+					asyncInvoke(onNotify, data);
 				});
 				return;
 			}
