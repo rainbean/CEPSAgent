@@ -7,7 +7,7 @@ var _subscribed = false;
  * 
  * Received JSON messages are forward to onNotify()  
  */
-exports.subscribe = function (onNotify) {
+function longPolling(onNotify) {
 	var http = require('http');
 	var helper = require('./helper');
 	
@@ -20,17 +20,27 @@ exports.subscribe = function (onNotify) {
 		//console.log(res.statusCode);
 		switch (res.statusCode) {
 		case 304:
-			// Time out, reconnect push module
-			// Here in fact is NOT infinite recursive function call, but up to 2 levels
-			// Okay to replace with setTimeout(...)
+			// Quote from Node.js API
+			//    On the next loop around the event loop call this callback. This is not a simple alias
+			// to setTimeout(fn, 0), it's much more efficient. It typically runs before any other I/O 
+			// events fire, but there are some exceptions.
+			
 			if (	_subscribed) {
-				module.exports.subscribe(onNotify);
+				process.nextTick(function() { // register to next event loop
+					longPolling(onNotify);
+				});
 			}
 			break;
 		case 200:
 			if (_subscribed) {
-				module.exports.subscribe(onNotify);
-				res.on('data', onNotify);
+				process.nextTick(function() { // register to next event loop, before real handle data
+					longPolling(onNotify);
+				});
+				res.on('data', function(data) { 
+					process.nextTick(function() { // register to next event loop to handle data
+						onNotify(data);
+					});
+				});
 				return;
 			}
 			break;
@@ -44,6 +54,7 @@ exports.subscribe = function (onNotify) {
 	});
 };
 
+exports.subscribe = longPolling;
 /**
  * Unsubscribe long polling notification channel 
  * 
