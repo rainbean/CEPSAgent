@@ -57,6 +57,12 @@ exports.getConfig = function () {
 	if (!_config) {
 		_config = {user: {id: 1000, name: 'test'}};
 	}
+
+	// check server setting
+	if (!_config.server) {
+		console.log('Invalid server config, please modify config.json!!!');
+		process.exit(1);
+	}
 	
 	if (!_config.endpoint) {
 		_config.endpoint = {

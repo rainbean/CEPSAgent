@@ -14,7 +14,7 @@ exports.subscribe = function (onNotify) {
 	_subscribed = true;
 	
 	// Make a HTTP GET request to push module
-	var url = helper.config.server.sub + '/' + helper.config.endpoint.id;
+	var url = 'http://' + helper.config.server.address + helper.config.server.sub + '/' + helper.config.endpoint.id;
 	http.get(url, function(res) {
 		res.setEncoding('utf8');
 		//console.log(res.statusCode);

@@ -5,8 +5,10 @@
   },
   "server": {
     "address": "ceps.cloudapp.net",
-    "cms": "http://ceps.cloudapp.net/cms",
-    "push": "http://ceps.cloudapp.net/pub?id=",
-    "sub": "http://ceps.cloudapp.net/sub"
+    "port":80,
+    "udp":23400,
+    "cms": "/cms",
+    "push": "/pub?id=",
+    "sub": "/sub"
   }
 }

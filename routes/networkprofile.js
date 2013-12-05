@@ -7,7 +7,7 @@ function serverInfo(onDone) {
 	var http = require('http');
 	var helper = require("./helper");
 	
-	var url = helper.config.server.cms + '/ServerInfo/';
+	var url = 'http://' + helper.config.server.address + helper.config.server.cms + '/ServerInfo/';
 	http.get(url, function(res) {
 		switch (res.statusCode) {
 		case 200:
@@ -83,9 +83,9 @@ function saveProfile() {
 	var datastr = JSON.stringify(data);
 	
 	var options = {
-			hostname: helper.serverinfo.cms[0].Host,
-			port: 80,
-			path: '/cms/NetworkProfile/' + helper.config.endpoint.id + '/' + 'pseudo',
+			hostname: helper.config.server.address,
+			port: helper.config.server.port,
+			path: helper.config.server.cms + '/NetworkProfile/' + helper.config.endpoint.id + '/' + 'pseudo',
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -187,7 +187,7 @@ function isPublicAccessible(onDone) {
 	// ask server to check whether UDP is reachable
 	// GET /v1/Message/{SocketType}?Nonce={Nonce}&SrcPort={SrcPort}&DestIP={DestIP}&DestPort={DestPort}&Count={Count}
 	var url = [
-		helper.config.server.cms + '/Message/UDP?Nonce=' + 'rose',
+		'http://' + helper.config.server.address + helper.config.server.cms + '/Message/UDP?Nonce=' + 'rose',
 		'SrcPort=' + helper.serverinfo.cms[0].Port[0],
 		'DestIP=' + helper.serverinfo.requestor.IP,
 		'DestPort=' + helper.config.endpoint.port,
@@ -212,15 +212,16 @@ function registerDevice() {
 	// POST /User/{UserID}/{EndpointName}/{EndpointID}
 	
 	var path = [
-			'/cms/User',
+			helper.config.server.cms,
+			'User',
 			helper.config.user.id,
 			helper.config.endpoint.name,
 			helper.config.endpoint.id
 		].join('/');
 	
 	var options = {
-			hostname: 'ceps.cloudapp.net',
-			port: 80,
+			hostname: helper.config.server.address,
+			port: helper.config.server.port,
 			path: path,
 			method: 'POST',
 		};
