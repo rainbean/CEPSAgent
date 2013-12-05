@@ -91,7 +91,7 @@ function sendUDPMessage(msg) {
  */
 function onCommand(msg) {
 	var http = require('http');
-	var helper = require("./helper");
+	var helper = require('./helper');
 	var constant = require('./constants');
 
 	switch (msg.Type) {
