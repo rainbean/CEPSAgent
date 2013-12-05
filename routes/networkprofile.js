@@ -19,6 +19,7 @@ function serverInfo(onDone) {
 			break;
 		default:
 			console.log('Got server info error: ' + res.statusCode);
+			res.on('data', function (data) {}); // always consume data trunk
 			break;
 		}
 	}).on('error', function(e) {
@@ -106,6 +107,7 @@ function saveProfile() {
 			console.log('Failed to save network profile, err=' + res.statusCode);
 			break;
 		}
+		res.on('data', function (data) {}); // always consume data trunk
 	}).on('error', function(e) {
 		console.log("Network profile error: " + e.message);
 	});

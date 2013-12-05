@@ -22,7 +22,7 @@ exports.subscribe = function (onNotify) {
 		case 304:
 			// Time out, reconnect push module
 			// Here in fact is NOT infinite recursive function call, but up to 2 levels
-			// Okay to replace with setTimeout(...) 
+			// Okay to replace with setTimeout(...)
 			if (	_subscribed) {
 				module.exports.subscribe(onNotify);
 			}
@@ -31,12 +31,14 @@ exports.subscribe = function (onNotify) {
 			if (_subscribed) {
 				module.exports.subscribe(onNotify);
 				res.on('data', onNotify);
+				return;
 			}
 			break;
 		default:
 			console.log('Got subscription error: ' + res.statusCode);
 			break;
 		}
+		res.on('data', function (data) {}); // always consume data trunk
 	}).on('error', function(e) {
 		console.log("Got subscription error: " + e.message);
 	});
