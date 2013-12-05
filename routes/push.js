@@ -1,5 +1,10 @@
 
 var _subscribed = false;
+var _queue = [];
+
+function dequeue(onNotify) {
+	onNotify(_queue.pop());
+}
 
 var asyncInvoke = function(callback, data){
 	process.nextTick(function(){
@@ -32,14 +37,15 @@ function longPolling(onNotify) {
 			// events fire, but there are some exceptions.
 			
 			if (_subscribed) {
-				asyncInvoke(longPolling, onNotify);
+				longPolling(onNotify);
 			}
 			break;
 		case 200:
 			if (_subscribed) {
-				asyncInvoke(longPolling, onNotify);
-				res.on('data', function(data) { 
-					asyncInvoke(onNotify, data);
+				longPolling(onNotify);
+				res.on('data', function(data) {
+					_queue.push(JSON.parse(data));
+					asyncInvoke(dequeue, onNotify);
 				});
 				return;
 			}

@@ -1,14 +1,13 @@
 
 /**
  * handle HTTP push notification
- * @param data HTTP body object 
+ * @param json a json object 
  * @return true if message handled, false for next handler
  */
-function onPush(data) {
+function onPush(json) {
 	var network = require("./networkprofile");
 	var session = require("./sessionprofile");
 	
-	var json = JSON.parse(data);
 	console.log(json);
 	
 	if (network.onPush(json)) {
