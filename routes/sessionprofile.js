@@ -146,16 +146,8 @@ function onResponse(res) {
 	res.setEncoding('utf8');
 	switch (res.statusCode) {
 	case 200:
-		// handle HTTP body as json command
-		res.on('data', function (data) {
-			var json = JSON.parse(data);
-			console.log(json);
-			onCommand(json);
-		});
-		return; // not error, return
 	case 202:
-		// server handled
-		return; // not error, return
+		break;
 	case 400:
 		console.error('Malformed syntax');
 		break;
@@ -172,8 +164,30 @@ function onResponse(res) {
 		console.log('Server error code:' + res.statusCode);
 		break;
 	}
+	
+	// Quote from node.js API:
+	//
+	// If no 'response' handler is added, then the response will be entirely discarded. 
+	// However, if you add a 'response' event handler, then you must consume the data from 
+	// the response object, either by calling response.read() whenever there is a 'readable' 
+	// event, or by adding a 'data' handler, or by calling the .resume() method. 
+	// 
+	// Until the data is consumed, the 'end' event will not fire. Also, until the data is read 
+	// it will consume memory that can eventually lead to a 'process out of memory' error.
+	//
+	res.on('data', function (data) { // always consume data trunk
+		if (res.statusCode === 200) {
+			// handle HTTP body as json command
+			var json = JSON.parse(data);
+			console.log(json);
+			onCommand(json);
+		}
+	});
+	
 	// abort session negociation on error
-	onInitDoneCallback(res.statusCode);
+	if (res.statusCode !== 200 && res.statusCode !== 202) {
+		onInitDoneCallback(res.statusCode);
+	}
 }
 
 
@@ -264,6 +278,7 @@ exports.onMessage = function(msg) {
 
 		// reply listener timeout with error
 		if (listener && listener.Reply && listener.Reply.OK) {
+			//console.log('Get UDP REQ_SEND_MSG, send ok reply to server');
 			var url = 'http://' + helper.config.server.address + helper.config.server.cms +
 				listener.Reply.OK + '&MsgSrcIP=' + msg.Remote.address + '&MsgSrcPort=' + msg.Remote.port;
 			http.get(url, onResponse).on('error', function(e) {
