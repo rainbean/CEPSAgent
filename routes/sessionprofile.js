@@ -1,8 +1,16 @@
+var _onDoneCB;
+var onInitDoneCallback;
+var listening = [];
+
 /**
  * Call back when session negociation is done
  */
-var onInitDoneCallback;
-var listening = [];
+function onInitDoneCallback(err, result) {
+	if (_onDoneCB) {
+		_onDoneCB(err, result);
+		_onDoneCB = null;
+	}
+}
 
 /**
  * Timeout on listening nonce 
@@ -178,7 +186,7 @@ exports.init = function (eid, onDone) {
 	var http = require('http');
 	var helper = require("./helper");
 
-	onInitDoneCallback = onDone;
+	_onDoneCB = onDone;
 	
 	// ask server to init session negociation
 	// GET /v1/SessionProfile/{SocketType}/{Requestor's EndpointID}/{Destination's EndpointID}	
