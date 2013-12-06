@@ -271,7 +271,8 @@ exports.onMessage = function(msg) {
 		for (var i = 0; i < listening.length; i++) {
 			if (listening[i].Nonce === msg.Nonce) {
 				listener = listening[i];
-				listening.splice(i, 1);	// remove listener 
+				listening.splice(i, 1);	// remove listener
+				clearTimeout(listener.TimeoutID); // remove timer 
 				break; // end loop
 			}
 		}
