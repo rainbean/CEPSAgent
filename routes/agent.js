@@ -32,6 +32,7 @@ function onMessage(msg, remote) {
 	var helper = require('./helper.js');
 	var network = require("./networkprofile");
 	var session = require("./sessionprofile");
+	var chat = require("./chat");
 
 	var json = {Remote: remote};
 
@@ -68,6 +69,10 @@ function onMessage(msg, remote) {
 	}
 	
 	if (session.onMessage(json)) {
+		return;
+	}
+	
+	if (chat.onMessage(json)) {
 		return;
 	}
 }
@@ -118,3 +123,41 @@ exports.init = function () {
 	network.init();
 };
 
+// session profile: {"Version":1,"Type":"CmdSaveSession","SocketType":"UDP","LocalPort":8080,"Destination":{"IP":"140.1.1.1","Port":38080},"Nonce":"Rose"}
+var _session = {};
+
+/**
+ * GET connection link with peer endpoint
+ */
+exports.link = function(req, res) {
+	var helper = require("./helper");
+	var session = require("./sessionprofile");
+
+	session.init(req.params.EndpointID, function(err, result) {
+		if (err) {
+			console.log('Failed to connect to eid:' + req.params.EndpointID + ', error:' + err);
+			return res.send(404);
+		}
+		_session = result;
+		return res.send(200);
+	});
+};
+
+/**
+ * Send message to establish session
+ */
+exports.talk = function(req, res) {
+	var helper = require("./helper");
+	var constant = require('./constants');
+
+	if (!_session) {
+		return res.send(404);
+	}
+	
+	var msg = _session;
+	msg.Type = constant.DATA_MSG;
+	msg.Data = req.params.Message;
+	helper.sendCepsUdpMsg(msg);
+	
+	return res.send(200);
+};

@@ -14,8 +14,17 @@
   <h2>CEPS Proof of Concept</h2>
   <div class="demo-info" style="margin-bottom:10px">
     <div class="demo-tip icon-tip"></div>
-    <div>Select device to connect to</div>
+    <div>Connect to </div>
+    <div><input id='items' class="easyui-combobox"></div>
   </div>
-  <input id='items-combobox' class="easyui-combobox" name="items">
+  <span id='link'></span>
+  <div id='container' style="margin-top:10px; display:none">
+    <div class="demo-info" style="margin-bottom:10px">
+      <div class="demo-tip icon-tip"></div>
+      <div>Send message </div>
+      <div><input type='text' id='message' size='100'></div>
+    </div>
+  </div>
+  <span id='log'></span>
 </body>
 </html>

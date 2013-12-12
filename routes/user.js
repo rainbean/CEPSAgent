@@ -20,18 +20,3 @@ exports.list = function(req, res) {
 	// option2: todo implement later, fetch in separate HTTP
 };
 
-/**
- * GET connection link with peer endpoint
- */
-exports.link = function(req, res) {
-	var helper = require("./helper");
-	var session = require("./sessionprofile");
-
-	session.init(req.params.EndpointID, function(err, result) {
-		if (err) {
-			console.log('Failed to connect to eid:' + req.params.EndpointID + ', error:' + err);
-			return res.send(404);
-		}
-		return res.send(result);
-	});
-};

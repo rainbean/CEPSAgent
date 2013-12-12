@@ -124,7 +124,7 @@ function getExtPortAsync() {
 	
 	var msg = {
 			Type: constant.REQ_GET_EXT_PORT,
-			Text: helper.config.endpoint.id,
+			Data: helper.config.endpoint.id,
 			LocalPort: helper.config.endpoint.port,
 			Destination: {
 				IP: helper.serverinfo.cms[0].Host,

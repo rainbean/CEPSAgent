@@ -21,6 +21,8 @@ define("LEN_REP_SEND_MSG", 25);
 define("REQ_GET_EXT_PORT", 0x0008);
 define("LEN_REQ_GET_EXT_PORT", 41);
 
+define("DATA_MSG", 0x0010);
+
 //state of session profiles
 define("STATE_UNKNOWN",     0);
 define("STATE_PRIVATE",     1);
@@ -47,5 +49,6 @@ define("CMD_GET_EXT_PORT", 'CmdGetExtPort');
 define("CMD_LISTEN_MSG",   'CmdListenMsg');
 define("CMD_SEND_MSG",     'CmdSendMsg');
 define("CMD_SAVE_SESSION", 'CmdSaveSession');
+define("CMD_ACK_EXT_PRT",  'RepGetExtPort');
 define("CMD_ACK_EXT_PRT",  'RepGetExtPort');
 

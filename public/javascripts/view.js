@@ -1,6 +1,6 @@
-//////////////////////////////////////////////////
-// Array Helper Functions
-//////////////////////////////////////////////////
+
+//Array Helper Functions
+
 //attach the .contains method to Array's prototype to call it on any array
 Array.prototype.contains = function (array, sizediff) {
 	// if the other array is a falsy value, return
@@ -56,9 +56,9 @@ Array.prototype.joinsub = function (array, sizediff) {
 	return match;
 }
 
-//////////////////////////////////////////////////
-// AJAX handler/callback functions
-//////////////////////////////////////////////////
+
+//AJAX handler/callback functions
+
 
 var info; // local config
 var list; // list of devices
@@ -66,7 +66,7 @@ var list; // list of devices
 function fnGetList() {
 	$.getJSON( "/list", function(data) {
 		list = data;
-		$('#items-combobox').combobox({
+		$('#items').combobox({
 			data:list,
 			valueField:'id',
 			textField:'name',
@@ -86,22 +86,40 @@ function fnSelectItemCB(item) {
 		title:'Connecting to ' + item.name,
 		msg:'Processing, Please Wait ...'
 	});
-		
-	$.getJSON( "/link/" + item.id, function(data) {
-		console.log(data);
-		// enforce a bit delay to show progress dialog, just for demo
-		setTimeout(function() {
-			$.messager.progress('close');
-		}, 10000);
+
+	$.getJSON("/link/" + item.id, function(data) {
+		$.messager.progress('close');
+		$('#link').text('Connected');
+		$('#container').show();
+	}).fail(function(jqXHR) {
+		$.messager.progress('close');
+		if (jqXHR.status == 200) {
+			$('#link').text('Connected');
+			$('#container').show();
+		} else if (jqXHR.status == 404) {
+			$('#link').text('404 Not Found');
+		} else {
+			$('#link').text('Other non-handled error type, code=' + jqXHR.status);
+		}
 	});
 }
 
-//////////////////////////////////////////////////
-// HTML action functions
-//////////////////////////////////////////////////
+
+//HTML action functions
+
 
 
 function fnDocumentReadyCB() {
 	fnGetInfo();
 	fnGetList();
+
+	$("#message").keyup(function(event){
+		if(event.keyCode == 13){
+			var msg = $(this).val();
+			$(this).val('');
+			$.getJSON("/talk/" + msg);
+			var data = $('#log').html();
+			$('#log').html(data + '<br> >> ' + msg);
+		}
+	});
 }
