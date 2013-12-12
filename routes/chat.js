@@ -9,7 +9,7 @@ exports.onMessage = function(msg) {
 	var constant = require("./constants");
 	
 	if (msg.Type === constant.DATA_MSG) {
-		console.log ("Chat >> " + msg.Data);
+		console.log ("Chat >> " + msg.Data.toString());
 		return true;
 	}
 	return false;

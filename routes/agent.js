@@ -156,7 +156,7 @@ exports.talk = function(req, res) {
 	
 	var msg = _session;
 	msg.Type = constant.DATA_MSG;
-	msg.Data = req.params.Message;
+	msg.Data = new Buffer(req.params.Message);
 	helper.sendCepsUdpMsg(msg);
 	
 	return res.send(200);
