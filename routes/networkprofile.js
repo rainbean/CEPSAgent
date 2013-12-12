@@ -119,37 +119,24 @@ function saveProfile() {
  * Detect whether hole punching is feasible
  */
 function getExtPortAsync() {
-	// Get external port
-	var dgram = require('dgram');
 	var helper = require('./helper');
 	var constant = require('./constants');
 	
-	var msg = new Buffer(constant.LEN_REQ_GET_EXT_PORT);
-	
-	msg.fill(0x00); // clear with zero 
-	msg.writeUInt32BE(constant.CEPS_MAGIC_CODE, 0);  // magic code
-	msg.writeUInt8(1, 4); // version
-	msg.writeUInt16BE(constant.REQ_GET_EXT_PORT, 5); // msg type
-	msg.writeUInt16BE(16, 7); // msg length: 16 bytes (end point)
-	var nonce = helper.createGUID();
-	var nonceBytes = helper.toBytes(nonce);
-	nonceBytes.copy(msg, 9);
-	var eidBytes = helper.toBytes(helper.config.endpoint.id);
-	eidBytes.copy(msg, constant.LEN_MIN_CEPS_MSG); // end point GUID
+	var msg = {
+			Type: constant.REQ_GET_EXT_PORT,
+			Text: helper.config.endpoint.id,
+			LocalPort: helper.config.endpoint.port,
+			Destination: {
+				IP: helper.serverinfo.cms[0].Host,
+				Port: helper.serverinfo.cms[0].Port[0]
+			},
+			Nonce: helper.createGUID(),
+			Count: 1
+		};
 
 	//console.log(msg);
 	
-	//console.log('send udp message');
-	var client = dgram.createSocket("udp4");
-	client.bind(helper.config.endpoint.port, function() {
-		client.send(msg, 0, msg.length, 
-				helper.serverinfo.cms[0].Port[0], 
-				helper.serverinfo.cms[0].Host, function(err, bytes) {
-			client.close();
-			console.log('Send out udp message: err = ' + err + ', bytes = ' +  bytes);
-		});
-	});
-	
+	helper.sendCepsUdpMsg(msg);
 	// wait for state machine in onPush()
 }
 

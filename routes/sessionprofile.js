@@ -43,48 +43,6 @@ function onListenTimeout(nonce) {
 	}
 }
 
-
-/**
- * Send "ReqSendMsg" message to specific address and port from specific local port, N times continuously
- *  
- * @param msg a json object, syntax: {LocalPort:8080, Destination: {IP: "140.1.1.1", Port: 38080}, Nonce:"Rose", Count: 5 }
- */
-function sendUDPMessage(msg) {
-	var dgram = require('dgram');
-	var helper = require('./helper');
-	var constant = require("./constants");
-
-	var udp = new Buffer(constant.LEN_REQ_SEND_MSG);
-	
-	udp.fill(0x00); // clear with zero 
-	udp.writeUInt32BE(constant.CEPS_MAGIC_CODE, 0);  // magic code
-	udp.writeUInt8(1, 4); // version
-	udp.writeUInt16BE(constant.REQ_SEND_MSG, 5); // msg type
-	udp.writeUInt16BE(0x0000, 7); // zero body length
-	var nonceBytes = helper.toBytes(msg.Nonce);
-	nonceBytes.copy(udp, 9);
-		
-	var client = dgram.createSocket("udp4");
-	client.bind(msg.LocalPort, function() {
-		var count = msg.Count;
-		if (typeof(count) === 'undefined' || count === null ||
-				count <= 0 || count >= 20) {
-			count = 1; // reset to once
-		}
-		
-		var done = count;
-		for (var i=0; i<count; ++i) {
-			client.send(udp, 0, udp.length, msg.Destination.Port, msg.Destination.IP, function(err, bytes) {
-				done --;
-				console.log('Send out udp message: err = ' + err + ', bytes = ' +  bytes);
-				if (done === 0) {
-					client.close();
-				}
-			});
-		}
-	});
-}
-
 /**
  * Command handler 
  * @param json
@@ -115,7 +73,8 @@ function onCommand(msg) {
 		return true;
 	case constant.CMD_SEND_MSG:
 		// Send "ReqSendMsg" message
-		sendUDPMessage(msg);
+		msg.Type = constant.REQ_SEND_MSG; // reuse this message and send it as udp
+		helper.sendCepsUdpMsg(msg);
 		
 		// reply server
 		if (msg.Reply && msg.Reply.OK) {
@@ -127,8 +86,7 @@ function onCommand(msg) {
 		}
 		return true;
 	case constant.CMD_SAVE_SESSION:
-		// {"Version":1,"Type":"CmdSaveSession","SocketType":"UDP","LocalPort":8080,"Destination":{"IP":"140.1.1.1","Port":38080},"Nonce":"Rose"}
-		onInitDoneCallback(null, 'Session establish complete');
+		onInitDoneCallback(null, msg);
 		return true;
 	case constant.CMD_GET_EXT_PORT:
 	case constant.CMD_MAP_UPNP:
