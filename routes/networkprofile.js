@@ -1,5 +1,5 @@
 // Network profile 
-var profile = {
+var _profile = {
 	Version:1,
 	UDP: {
 		Blocked:false,
@@ -38,9 +38,9 @@ function getServerInfo(onDone) {
 
 				// ToDo: handle multiple ip case 
 				var addr = helper.getNetworkIP();
-				profile.Location.ExtIP = json.requestor.IP;
-				profile.Location.LocalIP = addr[0];
-				profile.Location.LocalUDPPort = helper.config.endpoint.udp;
+				_profile.Location.ExtIP = json.requestor.IP;
+				_profile.Location.LocalIP = addr[0];
+				_profile.Location.LocalUDPPort = helper.config.endpoint.udp;
 				onDone();
 			});
 			break;
@@ -78,7 +78,7 @@ function saveProfile(onDone) {
 	var helper = require("./helper");
 	
 	// POST /v1/NetworkProfile/{EndpointID}/{NetworkID}	
-	var datastr = JSON.stringify(profile);
+	var datastr = JSON.stringify(_profile);
 	var options = {
 			hostname: helper.config.server[0].address,
 			port: helper.config.server[0].port,
@@ -132,7 +132,7 @@ function getUDPTestAck(callback, extPort, useSecondPort) {
 	var path = [
 		helper.config.server[0].cms + '/Message/UDP?Nonce=' + nonce,
 		'SrcPort=' + helper.config.server[serverId].udp[portId],
-		'DestIP=' + profile.Location.ExtIP,
+		'DestIP=' + _profile.Location.ExtIP,
 		'DestPort=' + extPort,
 		'Count=' + 3 // to-do, hardcode first
 	].join('&');
@@ -230,8 +230,8 @@ function isHolePunchAccessible(onDone) {
 	var extPort = 0;
 
 	// assume worst case
-	profile.UDP.Router.PortChange = true;
-	profile.UDP.Router.PortRestricted = true;
+	_profile.UDP.Router.PortChange = true;
+	_profile.UDP.Router.PortRestricted = true;
 
 	async.series([
 		function (onDone) {
@@ -239,13 +239,15 @@ function isHolePunchAccessible(onDone) {
 			getExtPortAck(function(msg) {
 				if (!msg) {
 					// failed to received external UDP status.
-					profile.UDP.Blocked = true;
+					console.log('HP step 1 - router seems block outbond UDP. :(');
+					_profile.UDP.Blocked = true;
 					onDone('timeout');
 					return;
 				}
 				// received callback - a json object as 
 				// {Version: 1, Type: constant.CMD_ACK_EXT_PRT, Nonce: msg.Nonce, Port: msg.Remote.port}
-				profile.UDP.Blocked = false;
+				console.log('HP step 1 - router does not block outbound UDP, external port is ' + msg.Port);
+				_profile.UDP.Blocked = false;
 				extPort = msg.Port;
 				onDone();
 			});
@@ -254,10 +256,12 @@ function isHolePunchAccessible(onDone) {
 			// ask server to punch in just received port
 			getUDPTestAck(function(msg) {
 				if (msg) {
-					profile.UDP.Router.PortChange = false;
-					profile.UDP.Router.PortRestricted = false;
+					console.log('HP step 2 - secondary server punch through, router is very friendly');
+					_profile.UDP.Router.PortChange = false;
+					_profile.UDP.Router.PortRestricted = false;
 					onDone('success'); // end hole-punch procedure
 				} else {
+					console.log('HP step 2 - secondary server could not send UDP preemptively. Let us punch 2nd server');
 					onDone(); // not received, go next check
 				}
 			}, extPort);
@@ -267,7 +271,8 @@ function isHolePunchAccessible(onDone) {
 			getExtPortAck(function(msg) {
 				if (!msg) {
 					// failed to received external UDP status.
-					profile.UDP.Blocked = true;
+					console.log('HP step 3 - router seems block outbond UDP or bad network status. :(');
+					_profile.UDP.Blocked = true;
 					onDone('timeout');
 					return;
 				}
@@ -275,9 +280,11 @@ function isHolePunchAccessible(onDone) {
 				// {Version: 1, Type: constant.CMD_ACK_EXT_PRT, Nonce: msg.Nonce, Port: msg.Remote.port}
 				if (extPort === msg.Port) {
 					// not PortChange router
-					profile.UDP.Router.PortChange = false;
+					console.log('HP step 3 - router may not change port');
+					_profile.UDP.Router.PortChange = false;
 				} else {
 					// is PortChange router
+					console.log('HP step 3 - router may change port, external port is ' + msg.Port);
 					extPort = msg.Port;
 				}
 				onDone(); // go next check
@@ -288,10 +295,12 @@ function isHolePunchAccessible(onDone) {
 			getUDPTestAck(function(msg) {
 				if (!msg) {
 					// failed to received external UDP status.
-					profile.UDP.Blocked = true;
+					console.log('HP step 4 - still not get UDP ack from secondary server even punch server first. router seems block inbound UDP :(');
+					_profile.UDP.Blocked = true;
 					onDone('timeout');
 					return;
 				}
+				console.log('HP step 4 - 2nd server can punch through');
 				onDone(); // received, go next check
 			}, extPort);
 		},
@@ -299,9 +308,11 @@ function isHolePunchAccessible(onDone) {
 			// ask server to punch in new received port from another port
 			getUDPTestAck(function(msg) {
 				if (msg) {
-					profile.UDP.Router.PortRestricted = false;
+					console.log('HP step 4 - router may not restrict port');
+					_profile.UDP.Router.PortRestricted = false;
 				} else {
-					profile.UDP.Router.PortRestricted = true;
+					console.log('HP step 4 - router may restrict port');
+					_profile.UDP.Router.PortRestricted = true;
 				}
 				onDone(); // go next check
 			}, extPort, true); // use 2nd port configuration
@@ -318,7 +329,7 @@ function isHolePunchAccessible(onDone) {
  */
 function isUPnPAccessible(onDone) {
 	// ToDo: implement later
-	profile.UDP.UPnP.Enabled = false;
+	_profile.UDP.UPnP.Enabled = false;
 	onDone();
 }
 
@@ -346,9 +357,9 @@ function isPublicAccessible(onDone) {
 	var http = require('http');
 	var helper = require("./helper");
 
-	if (!isPublicIP(profile.Location.ExtIP)) {
+	if (!isPublicIP(_profile.Location.ExtIP)) {
 		// not public IP, continue for next check
-		profile.UDP.Public = false;
+		_profile.UDP.Public = false;
 		onDone();
 		return;
 	}
@@ -356,13 +367,13 @@ function isPublicAccessible(onDone) {
 	// ask server to punch in just received port
 	getUDPTestAck(function(msg) {
 		if (msg) {
-			profile.UDP.Blocked = false;
-			profile.UDP.Public = true;
-			profile.UDP.Router.PortChange = false;
-			profile.UDP.Router.PortRestricted = false;
+			_profile.UDP.Blocked = false;
+			_profile.UDP.Public = true;
+			_profile.UDP.Router.PortChange = false;
+			_profile.UDP.Router.PortRestricted = false;
 			onDone('success'); // end detection procedure
 		} else {
-			profile.UDP.Public = false;
+			_profile.UDP.Public = false;
 			onDone(); // not received, go next check
 		}
 	}, helper.config.endpoint.udp);
@@ -374,7 +385,7 @@ function isPublicAccessible(onDone) {
 function registerDevice(onDone) {
 	var http = require('http');
 	var helper = require("./helper");
-
+	
 	// Make a HTTP POST request
 	// POST /User/{UserID}/{EndpointName}/{EndpointID}
 	var path = [
@@ -402,11 +413,17 @@ function registerDevice(onDone) {
  * 
  * @param onDone callback function to send event to when it's done 
  */
-exports.init = function () {
+exports.init = function (subscriber) {
 	var async = require('async');
-
+	var push = require("./push");
+	
 	async.series([
 		getServerInfo,
+		function(onDone) {
+			// subscribe push channel
+			push.subscribe(subscriber);
+			onDone();
+		},
 		registerDevice,
 		isProfileReady,
 		isPublicAccessible,
@@ -421,7 +438,6 @@ exports.init = function () {
 			console.log('Failed to create network profile!');
 			process.exit(1);
 		} else {
-			console.log(results);
 			console.log('Network profile is ready, please connect to http://localhost:8000/');
 		}
 	});
