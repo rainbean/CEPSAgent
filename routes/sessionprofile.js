@@ -1,6 +1,6 @@
 var _onDoneCB;
 var onInitDoneCallback;
-var listening = [];
+var timers = [];
 
 /**
  * Call back when session negociation is done
@@ -16,30 +16,36 @@ function onInitDoneCallback(err, result) {
  * Timeout on listening nonce 
  * @param nonce
  */
-function onListenTimeout(nonce) {
+function onTimeout(nonce) {
 	var http = require('http');
 	var helper = require("./helper");
 	var constant = require('./constants');
 	
 	// check if nonce matchs any listener
-	var listener;
-	for (var i = 0; i < listening.length; i++) {
-		if (listening[i].Nonce === nonce) {
-			listener = listening[i];
-			listening.splice(i, 1); // remove listener
+	var t;
+	for (var i = 0; i < timers.length; i++) {
+		if (timers[i].Nonce === nonce) {
+			t = timers[i];
+			timers.splice(i, 1); // remove listener
 			break; // end loop
 		}
 	}
 	
 	// reply listener timeout with error
-	if (listener && listener.Reply && listener.Reply.Error) {
-		var url = 'http://' + helper.config.server.address + helper.config.server.cms +
-			listener.Reply.Error + '?ErrorCode=' + 408 + '&ErrorDesc=Timeout';
-		http.get(url, onResponse).on('error', function(e) {
+	if (t && t.Reply && t.Reply.Error) {
+		var path = helper.config.server[0].cms + t.Reply.Error + '?ErrorCode=' + 408 + '&ErrorDesc=Timeout';
+		var options = {
+				hostname: helper.config.server[0].address,
+				port: helper.config.server[0].port,
+				path: path,
+				method: 'GET',
+			};
+		var req = http.request(options, onResponse).on('error', function(e) {
 			console.log("Failed to send HTTP request, error: " + e.message);
 			// abort session negociation on error
 			onInitDoneCallback(e);
 		});
+		req.end();
 	}
 }
 
@@ -52,25 +58,37 @@ function onCommand(msg) {
 	var http = require('http');
 	var helper = require('./helper');
 	var constant = require('./constants');
+	var isHandled = true;
+	var path;
+	var options;
+	var req;
 
 	switch (msg.Type) {
 	case constant.CMD_LISTEN_MSG:
 		// create new listener with timeout
 		if (msg.Reply && msg.Timeout > 0) {
-			var listener = {TimeoutID: null, Nonce: msg.Nonce, Reply: msg.Reply};
-			listener.TimeoutID = setTimeout(onListenTimeout, 1000 * msg.Timeout, msg.Nonce);
-			listening.push(listener);
+			var timer = {ID: null, Nonce: msg.Nonce, Reply: msg.Reply};
+			timer.ID = setTimeout(onTimeout, 1000 * msg.Timeout, msg.Nonce);
+			timers.push(timer);
 		}
 		
 		// reply listener ready 
 		if (msg.Reply && msg.Reply.Ready) {
-			http.get('http://' + helper.config.server.address + helper.config.server.cms + msg.Reply.Ready, onResponse).on('error', function(e) {
+			path = helper.config.server[0].cms + msg.Reply.Ready;
+			options = {
+					hostname: helper.config.server[0].address,
+					port: helper.config.server[0].port,
+					path: path,
+					method: 'GET',
+				};
+			req = http.request(options, onResponse).on('error', function(e) {
 				console.log("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
 			});
+			req.end();
 		}
-		return true;
+		break;
 	case constant.CMD_SEND_MSG:
 		// Send "ReqSendMsg" message
 		msg.Type = constant.REQ_SEND_MSG; // reuse this message and send it as udp
@@ -78,22 +96,34 @@ function onCommand(msg) {
 		
 		// reply server
 		if (msg.Reply && msg.Reply.OK) {
-			http.get('http://' + helper.config.server.address + helper.config.server.cms + msg.Reply.OK, onResponse).on('error', function(e) {
+			path = helper.config.server[0].cms + msg.Reply.OK;
+			options = {
+					hostname: helper.config.server[0].address,
+					port: helper.config.server[0].port,
+					path: path,
+					method: 'GET',
+				};
+			req = http.request(options, onResponse).on('error', function(e) {
 				console.log("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
 			});
+			req.end();
 		}
-		return true;
+		break;
 	case constant.CMD_SAVE_SESSION:
 		onInitDoneCallback(null, msg);
-		return true;
+		break;
 	case constant.CMD_GET_EXT_PORT:
 	case constant.CMD_MAP_UPNP:
-		return false;
+		isHandled = false;
+		break;
 	default:
-		return false;
+		isHandled = false;
+		break;
 	}
+	
+	return isHandled;
 }
 
 /**
@@ -162,44 +192,21 @@ exports.init = function (eid, onDone) {
 	_onDoneCB = onDone;
 	
 	// ask server to init session negociation
-	// GET /v1/SessionProfile/{SocketType}/{Requestor's EndpointID}/{Destination's EndpointID}	
-	var url = [
-		'http://' + helper.config.server.address + helper.config.server.cms,
-		'SessionProfile',
-		'UDP',
-		helper.config.endpoint.id,
-		eid
-	].join('/');
-	
-	http.get(url, onResponse).on('error', function(e) {
+	// GET /v1/SessionProfile/{SocketType}/{Requestor's EndpointID}/{Destination's EndpointID}
+	var path = helper.config.server[0].cms + 'SessionProfile/UDP/' + helper.config.endpoint.id + '/' + eid;
+	var options = {
+			hostname: helper.config.server[0].address,
+			port: helper.config.server[0].port,
+			path: path,
+			method: 'GET',
+		};
+	var req = http.request(options, onResponse).on('error', function(e) {
 		console.log("Failed to send HTTP request, error: " + e.message);
 		// abort session negociation on error
 		onInitDoneCallback(e);
 	});
-
+	req.end();
 };
-
-function async_template(eid, onDone) {
-	var async = require('async');
-
-	// ToDo: replace placeholder code
-	async.series([
-		function(callback) {
-			// do some stuff ...
-			callback(null, 'one');
-		},
-		function(callback) {
-			// do some more stuff ...
-			callback(null, 'two');
-		}
-	],
-	//optional callback
-	function(err, results) {
-		// results is now equal to ['one', 'two']
-		console.log(results);
-		onDone(null, results);
-	});
-}
 
 
 /**
@@ -225,26 +232,32 @@ exports.onMessage = function(msg) {
 	switch (msg.Type) {
 	case constant.REQ_SEND_MSG:
 		// check if nonce matchs any listener
-		var listener;
-		for (var i = 0; i < listening.length; i++) {
-			if (listening[i].Nonce === msg.Nonce) {
-				listener = listening[i];
-				listening.splice(i, 1);	// remove listener
-				clearTimeout(listener.TimeoutID); // remove timer 
+		var t;
+		for (var i = 0; i < timers.length; i++) {
+			if (timers[i].Nonce === msg.Nonce) {
+				t = timers[i];
+				timers.splice(i, 1);	// remove listener
+				clearTimeout(t.ID); // remove timer 
 				break; // end loop
 			}
 		}
 
-		// reply listener timeout with error
-		if (listener && listener.Reply && listener.Reply.OK) {
+		// reply ok
+		if (t && t.Reply && t.Reply.OK) {
 			//console.log('Get UDP REQ_SEND_MSG, send ok reply to server');
-			var url = 'http://' + helper.config.server.address + helper.config.server.cms +
-				listener.Reply.OK + '&MsgSrcIP=' + msg.Remote.address + '&MsgSrcPort=' + msg.Remote.port;
-			http.get(url, onResponse).on('error', function(e) {
+			var path = helper.config.server[0].cms + t.Reply.OK + '&MsgSrcIP=' + msg.Remote.address + '&MsgSrcPort=' + msg.Remote.port;
+			var options = {
+					hostname: helper.config.server[0].address,
+					port: helper.config.server[0].port,
+					path: path,
+					method: 'GET',
+				};
+			var req = http.request(options, onResponse).on('error', function(e) {
 				console.log("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
 			});
+			req.end();
 		}
 		return true;
 	default:

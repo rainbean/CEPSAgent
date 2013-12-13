@@ -39,7 +39,6 @@ exports.toString = function(bytes) {
 
 // configuration store
 exports.config = {};
-exports.serverinfo;
 
 /**
  * Read configuration from file

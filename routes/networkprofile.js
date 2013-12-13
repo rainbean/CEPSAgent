@@ -28,17 +28,17 @@ function getServerInfo(onDone) {
 	var http = require('http');
 	var helper = require("./helper");
 	
-	var url = 'http://' + helper.config.server.address + helper.config.server.cms + '/ServerInfo/';
-	http.get(url, function(res) {
+	http.get(helper.config.ServerInfo, function(res) {
 		switch (res.statusCode) {
 		case 200:
-			res.on('data', function(chunk) {
-				helper.serverinfo = JSON.parse(chunk);
-				//console.log(helper.serverinfo);
+			res.on('data', function(data) {
+				var json = JSON.parse(data);
+				helper.config.server = json.server;
+				//console.log(helper.config.server);
 
 				// ToDo: handle multiple ip case 
 				var addr = helper.getNetworkIP();
-				profile.Location.ExtIP = helper.serverinfo.requestor.IP;
+				profile.Location.ExtIP = json.requestor.IP;
 				profile.Location.LocalIP = addr[0];
 				profile.Location.LocalUDPPort = helper.config.endpoint.udp;
 				onDone();
@@ -80,9 +80,9 @@ function saveProfile(onDone) {
 	// POST /v1/NetworkProfile/{EndpointID}/{NetworkID}	
 	var datastr = JSON.stringify(profile);
 	var options = {
-			hostname: helper.config.server.address,
-			port: helper.config.server.port,
-			path: helper.config.server.cms + '/NetworkProfile/' + helper.config.endpoint.id + '/' + 'pseudo',
+			hostname: helper.config.server[0].address,
+			port: helper.config.server[0].port,
+			path: helper.config.server[0].cms + '/NetworkProfile/' + helper.config.endpoint.id + '/' + 'pseudo',
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ function saveProfile(onDone) {
 
 var timers = [];
 /**
- * Ask Server to punch a UDP 'REP_SEND_MSG' message
+ * Ask secondary server to punch a UDP 'REP_SEND_MSG' message
  * @param callback to notify UDP ack received successfully or not, decided by callback argument
  * @param extPort which router port server shall send UDP to
  * @param useSecondPort whether port configuration shall server send UDP from  
@@ -126,22 +126,25 @@ function getUDPTestAck(callback, extPort, useSecondPort) {
 	var helper = require("./helper");
 	var portId = (useSecondPort) ? 1 : 0;
 	var nonce = helper.createGUID();
+	var serverId = 1; // secondary server
 
 	// GET /v1/Message/{SocketType}?Nonce={Nonce}&SrcPort={SrcPort}&DestIP={DestIP}&DestPort={DestPort}&Count={Count}
-	var url = [
-		'http://' + helper.serverinfo.cms[1].Host + helper.config.server.cms, // send request to 2nd server
-		'Message',
-		'UDP'
-	].join('/');
-	var query = [
-		'Nonce=' +  nonce,
-		'SrcPort=' + helper.serverinfo.cms[1].Port[portId],
+	var path = [
+		helper.config.server[0].cms + '/Message/UDP?Nonce=' + nonce,
+		'SrcPort=' + helper.config.server[serverId].udp[portId],
 		'DestIP=' + profile.Location.ExtIP,
 		'DestPort=' + extPort,
 		'Count=' + 3 // to-do, hardcode first
 	].join('&');
 	
-	http.get(url + '?' + query, function(res) {
+	var options = {
+			hostname: helper.config.server[serverId].address,
+			port: helper.config.server[serverId].port,
+			path: path,
+			method: 'GET',
+		};
+	
+	var req = http.request(options, function(res) {
 		res.on('data', function (data) {}); // always consume data trunk
 		switch (res.statusCode) {
 		case 200:
@@ -173,6 +176,7 @@ function getUDPTestAck(callback, extPort, useSecondPort) {
 		// abort session negociation on error
 		callback(); // empty argument means error
 	});
+	req.end();
 }
 
 /**
@@ -191,8 +195,8 @@ function getExtPortAck(callback, useSecondServer) {
 			Data: helper.toBytes(helper.config.endpoint.id),
 			LocalPort: helper.config.endpoint.port,
 			Destination: {
-				IP: helper.serverinfo.cms[serverId].Host,
-				Port: helper.serverinfo.cms[serverId].Port[0]
+				IP: helper.config.server[serverId].address,
+				Port: helper.config.server[serverId].udp[0]
 			},
 			Nonce: nonce,
 			Count: 1
@@ -342,32 +346,26 @@ function isPublicAccessible(onDone) {
 	var http = require('http');
 	var helper = require("./helper");
 
-	if (!isPublicIP(helper.serverinfo.requestor.IP)) {
+	if (!isPublicIP(profile.Location.ExtIP)) {
 		// not public IP, continue for next check
 		profile.UDP.Public = false;
 		onDone();
+		return;
 	}
 	
-	// ToDo: implement later
-	if (true) {
-		console.log('Public IP is not well implmeneted yet');
-		onDone(false);
-	}
-
-	// ask server to check whether UDP is reachable
-	// GET /v1/Message/{SocketType}?Nonce={Nonce}&SrcPort={SrcPort}&DestIP={DestIP}&DestPort={DestPort}&Count={Count}
-	var url = [
-		'http://' + helper.config.server.address + helper.config.server.cms + '/Message/UDP?Nonce=' + 'rose',
-		'SrcPort=' + helper.serverinfo.cms[0].Port[0],
-		'DestIP=' + helper.serverinfo.requestor.IP,
-		'DestPort=' + helper.config.endpoint.port,
-		'Count=10'
-	].join('&');
-	http.get(url).on('error', function(e) {
-		console.log("Failed to send HTTP request, error: " + e.message);
-	});
-	
-	// ToDo: do async check in onUDP() to invoke onDone
+	// ask server to punch in just received port
+	getUDPTestAck(function(msg) {
+		if (msg) {
+			profile.UDP.Blocked = false;
+			profile.UDP.Public = true;
+			profile.UDP.Router.PortChange = false;
+			profile.UDP.Router.PortRestricted = false;
+			onDone('success'); // end detection procedure
+		} else {
+			profile.UDP.Public = false;
+			onDone(); // not received, go next check
+		}
+	}, helper.config.endpoint.udp);
 }
 
 /**
@@ -376,12 +374,11 @@ function isPublicAccessible(onDone) {
 function registerDevice(onDone) {
 	var http = require('http');
 	var helper = require("./helper");
-	
+
 	// Make a HTTP POST request
 	// POST /User/{UserID}/{EndpointName}/{EndpointID}
-	
 	var path = [
-			helper.config.server.cms,
+			helper.config.server[0].cms,
 			'User',
 			helper.config.user.id,
 			helper.config.endpoint.name,
@@ -389,8 +386,8 @@ function registerDevice(onDone) {
 		].join('/');
 	
 	var options = {
-			hostname: helper.config.server.address,
-			port: helper.config.server.port,
+			hostname: helper.config.server[0].address,
+			port: helper.config.server[0].port,
 			path: path,
 			method: 'POST',
 		};

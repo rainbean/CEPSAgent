@@ -25,8 +25,14 @@ function longPolling(onNotify) {
 	_subscribed = true;
 	
 	// Make a HTTP GET request to push module
-	var url = 'http://' + helper.config.server.address + helper.config.server.sub + '/' + helper.config.endpoint.id;
-	http.get(url, function(res) {
+	var path = helper.config.server[0].sub + '/' + helper.config.endpoint.id;
+	var options = {
+			hostname: helper.config.server[0].address,
+			port: helper.config.server[0].port,
+			path: path,
+			method: 'GET',
+		};
+	var req = http.request(options, function(res) {
 		res.setEncoding('utf8');
 		//console.log(res.statusCode);
 		switch (res.statusCode) {
@@ -58,7 +64,8 @@ function longPolling(onNotify) {
 	}).on('error', function(e) {
 		console.log("Got subscription error: " + e.message);
 	});
-};
+	req.end();
+}
 
 exports.subscribe = longPolling;
 /**

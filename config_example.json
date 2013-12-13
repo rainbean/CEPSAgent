@@ -3,12 +3,5 @@
     "id": 1000,
     "name": "test"
   },
-  "server": {
-    "address": "ceps.cloudapp.net",
-    "port":80,
-    "udp":23400,
-    "cms": "/cms",
-    "push": "/pub?id=",
-    "sub": "/sub"
-  }
+  "ServerInfo": "http://ceps.cloudapp.net/cms/ServerInfo"
 }
