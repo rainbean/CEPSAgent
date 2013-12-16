@@ -308,10 +308,10 @@ function isHolePunchAccessible(onDone) {
 			// ask server to punch in new received port from another port
 			getUDPTestAck(function(msg) {
 				if (msg) {
-					console.log('HP step 4 - router may not restrict port');
+					console.log('HP step 5 - router may not restrict port');
 					_profile.UDP.Router.PortRestricted = false;
 				} else {
-					console.log('HP step 4 - router may restrict port');
+					console.log('HP step 5 - router may restrict port');
 					_profile.UDP.Router.PortRestricted = true;
 				}
 				onDone(); // go next check
