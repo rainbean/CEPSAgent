@@ -47,12 +47,12 @@ function getServerInfo(onDone) {
 		default:
 			console.log('Got server info error: ' + res.statusCode);
 			res.on('data', function (data) {}); // always consume data trunk
-			onDone(false);
+			onDone('error');
 			break;
 		}
 	}).on('error', function(e) {
 		console.log("Failed to send HTTP request, error: " + e.message);
-		onDone(false);
+		onDone('error');
 	});
 }
 
@@ -101,13 +101,13 @@ function saveProfile(onDone) {
 			break;
 		default:
 			console.log('Failed to save network profile, err=' + res.statusCode);
-			onDone(false);
+			onDone('error');
 			break;
 		}
 		res.on('data', function (data) {}); // always consume data trunk
 	}).on('error', function(e) {
 		console.log("Network profile error: " + e.message);
-		onDone(false);
+		onDone('error');
 	});
 	req.write(datastr); // write data to request body
 	req.end();
