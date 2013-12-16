@@ -193,7 +193,7 @@ function getExtPortAck(callback, useSecondServer) {
 	var msg = {
 			Type: constant.REQ_GET_EXT_PORT,
 			Data: helper.toBytes(helper.config.endpoint.id),
-			LocalPort: helper.config.endpoint.port,
+			LocalPort: helper.config.endpoint.udp,
 			Destination: {
 				IP: helper.config.server[serverId].address,
 				Port: helper.config.server[serverId].udp[0]
@@ -492,7 +492,7 @@ exports.onMessage = function(msg) {
 	var constant = require("./constants");
 
 	switch (msg.Type) {
-	case constant.REP_GET_EXT_PORT:
+	case constant.REP_SEND_MSG:
 		// check if nonce matchs any timer
 		var t;
 		for (var i = 0; i < timers.length; i++) {
