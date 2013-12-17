@@ -115,6 +115,30 @@ function saveProfile(onDone) {
 
 
 var timers = [];
+function popTimer(nonce) {
+	var t;
+	for (var i = 0; i < timers.length; i++) {
+		if (timers[i].Nonce === nonce) {
+			t = timers[i];
+			timers.splice(i, 1); // remove listener
+			clearTimeout(t.ID); // remove timer
+			return t; // end loop
+		}
+	}
+	return null;
+}
+function pushTimer(callback, timeout, nonce) {
+	var t = {ID: null, Nonce: nonce, onReceived: callback};
+	t.ID = setTimeout(function(nonce) {
+		// check if nonce matchs any timer
+		var t = popTimer(nonce);
+		if (t && t.onReceived) {
+			t.onReceived(); // empty argument means timeout
+		}
+	}, timeout*1000, nonce); // timeout in n seconds
+	timers.push(t);
+}
+
 /**
  * Ask secondary server to punch a UDP 'REP_SEND_MSG' message
  * @param callback to notify UDP ack received successfully or not, decided by callback argument
@@ -144,36 +168,25 @@ function getUDPTestAck(callback, extPort, useSecondPort) {
 			method: 'GET',
 		};
 	
+	// set timer before http request to avoid racing condition
+	pushTimer(callback, 10, nonce); // timeout in 10 seconds
+	
 	var req = http.request(options, function(res) {
 		res.on('data', function (data) {}); // always consume data trunk
 		switch (res.statusCode) {
 		case 200:
 		case 202:
-			var timer = {ID: null, Nonce: nonce, onReceived: callback};
-			timer.ID = setTimeout(function(nonce) {
-				// check if nonce matchs any timer
-				var t;
-				for (var i = 0; i < timers.length; i++) {
-					if (timers[i].Nonce === nonce) {
-						t = timers[i];
-						timers.splice(i, 1); // remove listener
-						break; // end loop
-					}
-				}
-				if (t) {
-					callback(); // empty argument means timeout
-				}
-			}, 10*1000, nonce); // timeout in 10 seconds
-			timers.push(timer);
 			break;
 		default:
 			console.log('Failed to send HTTP request, error: ' + res.statusCode);
+			popTimer(nonce); // remove timer
 			callback(); // empty argument means error
 			break;
 		}
 	}).on('error', function(e) {
 		console.log("Failed to send HTTP request, error: " + e.message);
 		// abort session negociation on error
+		popTimer(nonce); // remove timer
 		callback(); // empty argument means error
 	});
 	req.end();
@@ -203,22 +216,7 @@ function getExtPortAck(callback, useSecondServer) {
 		};
 	helper.sendCepsUdpMsg(msg);
 	
-	var timer = {ID: null, Nonce: nonce, onReceived: callback};
-	timer.ID = setTimeout(function(nonce) {
-		// check if nonce matchs any timer
-		var t;
-		for (var i = 0; i < timers.length; i++) {
-			if (timers[i].Nonce === nonce) {
-				t = timers[i];
-				timers.splice(i, 1); // remove listener
-				break; // end loop
-			}
-		}
-		if (t) {
-			callback(); // empty argument means timeout
-		}
-	}, 10*1000, nonce); // timeout in 10 seconds
-	timers.push(timer);
+	pushTimer(callback, 10, nonce); // timeout in 10 seconds
 }
 
 
@@ -464,15 +462,7 @@ exports.onPush = function(msg) {
 	switch (msg.Type) {
 	case constant.CMD_ACK_EXT_PRT:
 		// check if nonce matchs any timer
-		var t;
-		for (var i = 0; i < timers.length; i++) {
-			if (timers[i].Nonce === msg.Nonce) {
-				t = timers[i];
-				timers.splice(i, 1); // remove listener
-				clearTimeout(t.ID); // remove timer 
-				break; // end loop
-			}
-		}
+		var t = popTimer(msg.Nonce);
 		if (t && t.onReceived) {
 			t.onReceived(msg);
 		}
@@ -494,15 +484,7 @@ exports.onMessage = function(msg) {
 	switch (msg.Type) {
 	case constant.REP_SEND_MSG:
 		// check if nonce matchs any timer
-		var t;
-		for (var i = 0; i < timers.length; i++) {
-			if (timers[i].Nonce === msg.Nonce) {
-				t = timers[i];
-				timers.splice(i, 1); // remove listener
-				clearTimeout(t.ID); // remove timer
-				break; // end loop
-			}
-		}
+		var t = popTimer(msg.Nonce);
 		if (t && t.onReceived) {
 			t.onReceived(msg);
 		}
