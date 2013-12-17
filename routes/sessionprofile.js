@@ -12,41 +12,46 @@ function onInitDoneCallback(err, result) {
 	}
 }
 
-/**
- * Timeout on listening nonce 
- * @param nonce
- */
-function onTimeout(nonce) {
-	var http = require('http');
-	var helper = require("./helper");
-	var constant = require('./constants');
-	
-	// check if nonce matchs any listener
+function popTimer(nonce) {
 	var t;
 	for (var i = 0; i < timers.length; i++) {
 		if (timers[i].Nonce === nonce) {
 			t = timers[i];
 			timers.splice(i, 1); // remove listener
-			break; // end loop
+			clearTimeout(t.ID); // remove timer
+			return t; // end loop
 		}
 	}
+	return null;
+}
+function pushTimer(reply, timeout, nonce) {
+	var http = require('http');
+	var helper = require("./helper");
+	var constant = require('./constants');
 	
-	// reply listener timeout with error
-	if (t && t.Reply && t.Reply.Error) {
-		var path = helper.config.server[0].cms + t.Reply.Error + '?ErrorCode=' + 408 + '&ErrorDesc=Timeout';
-		var options = {
-				hostname: helper.config.server[0].address,
-				port: helper.config.server[0].port,
-				path: path,
-				method: 'GET',
-			};
-		var req = http.request(options, onResponse).on('error', function(e) {
-			console.log("Failed to send HTTP request, error: " + e.message);
-			// abort session negociation on error
-			onInitDoneCallback(e);
-		});
-		req.end();
-	}
+	var t = {ID: null, Nonce: nonce, Reply: reply};
+	t.ID = setTimeout(function(nonce) {
+		// check if nonce matchs any timer
+		var t = popTimer(nonce);
+		
+		if (t && t.Reply && t.Reply.Error) {
+			// reply listener timeout with error
+			var path = helper.config.server[0].cms + t.Reply.Error + '?ErrorCode=' + 408 + '&ErrorDesc=Timeout';
+			var options = {
+					hostname: helper.config.server[0].address,
+					port: helper.config.server[0].port,
+					path: path,
+					method: 'GET',
+				};
+			var req = http.request(options, onResponse).on('error', function(e) {
+				console.log("Failed to send HTTP request, error: " + e.message);
+				// abort session negociation on error
+				onInitDoneCallback(e);
+			});
+			req.end();
+		}
+	}, timeout*1000, nonce); // timeout in n seconds
+	timers.push(t);
 }
 
 /**
@@ -65,11 +70,9 @@ function onCommand(msg) {
 
 	switch (msg.Type) {
 	case constant.CMD_LISTEN_MSG:
-		// create new listener with timeout
+		// create new timer with timeout
 		if (msg.Reply && msg.Timeout > 0) {
-			var timer = {ID: null, Nonce: msg.Nonce, Reply: msg.Reply};
-			timer.ID = setTimeout(onTimeout, 1000 * msg.Timeout, msg.Nonce);
-			timers.push(timer);
+			pushTimer(msg.Reply, msg.Nonce, msg.Timeout);
 		}
 		
 		// reply listener ready 
@@ -115,6 +118,36 @@ function onCommand(msg) {
 		onInitDoneCallback(null, msg);
 		break;
 	case constant.CMD_GET_EXT_PORT:
+		// Send UDP message to server and wait for PUSH ack
+		if (msg.Reply && msg.Timeout > 0) {
+			// todo: create random nonce to assure no message replay.
+			pushTimer(msg.Reply, msg.Nonce, msg.Timeout);
+		}
+		msg.Type = constant.REQ_GET_EXT_PORT; // reuse this message and send it as udp
+		msg.Data = helper.toBytes(helper.config.endpoint.id);
+		helper.sendCepsUdpMsg(msg);
+		break;
+	case constant.CMD_ACK_EXT_PRT:
+		// Server's ack of CMD_GET_EXT_PORT
+		var t = popTimer(msg.Nonce);
+
+		// reply ok
+		if (t && t.Reply && t.Reply.OK) {
+			var path = helper.config.server[0].cms + t.Reply.OK + '&ExtPort=' + msg.Port;
+			var options = {
+					hostname: helper.config.server[0].address,
+					port: helper.config.server[0].port,
+					path: path,
+					method: 'GET',
+				};
+			var req = http.request(options, onResponse).on('error', function(e) {
+				console.log("Failed to send HTTP request, error: " + e.message);
+				// abort session negociation on error
+				onInitDoneCallback(e);
+			});
+			req.end();
+		}
+		break;
 	case constant.CMD_MAP_UPNP:
 		isHandled = false;
 		break;
@@ -232,15 +265,7 @@ exports.onMessage = function(msg) {
 	switch (msg.Type) {
 	case constant.REQ_SEND_MSG:
 		// check if nonce matchs any listener
-		var t;
-		for (var i = 0; i < timers.length; i++) {
-			if (timers[i].Nonce === msg.Nonce) {
-				t = timers[i];
-				timers.splice(i, 1);	// remove listener
-				clearTimeout(t.ID); // remove timer 
-				break; // end loop
-			}
-		}
+		var t = popTimer(msg.Nonce);
 
 		// reply ok
 		if (t && t.Reply && t.Reply.OK) {
