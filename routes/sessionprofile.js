@@ -72,7 +72,7 @@ function onCommand(msg) {
 	case constant.CMD_LISTEN_MSG:
 		// create new timer with timeout
 		if (msg.Reply && msg.Timeout > 0) {
-			pushTimer(msg.Reply, msg.Nonce, msg.Timeout);
+			pushTimer(msg.Reply, msg.Timeout, msg.Nonce);
 		}
 		
 		// reply listener ready 
@@ -120,7 +120,7 @@ function onCommand(msg) {
 	case constant.CMD_GET_EXT_PORT:
 		// Send UDP message to server and wait for PUSH ack
 		if (msg.Reply && msg.Timeout > 0) {
-			pushTimer(msg.Reply, helper.createGUID(), msg.Timeout); // create random nonce to assure no replay.
+			pushTimer(msg.Reply, msg.Timeout, helper.createGUID()); // create random nonce to assure no replay.
 		}
 		msg.Type = constant.REQ_GET_EXT_PORT; // reuse this message and send it as udp
 		msg.Data = helper.toBytes(helper.config.endpoint.id);
@@ -225,7 +225,7 @@ exports.init = function (eid, onDone) {
 	
 	// ask server to init session negociation
 	// GET /v1/SessionProfile/{SocketType}/{Requestor's EndpointID}/{Destination's EndpointID}
-	var path = helper.config.server[0].cms + 'SessionProfile/UDP/' + helper.config.endpoint.id + '/' + eid;
+	var path = helper.config.server[0].cms + '/SessionProfile/UDP/' + helper.config.endpoint.id + '/' + eid;
 	var options = {
 			hostname: helper.config.server[0].address,
 			port: helper.config.server[0].port,

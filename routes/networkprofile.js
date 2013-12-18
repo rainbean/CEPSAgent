@@ -212,11 +212,11 @@ function getExtPortAck(callback, useSecondServer) {
 				Port: helper.config.server[serverId].udp[0]
 			},
 			Nonce: nonce,
-			Count: 1
+			Count: 3
 		};
 	helper.sendCepsUdpMsg(msg);
 	
-	pushTimer(callback, 10, nonce); // timeout in 10 seconds
+	pushTimer(callback, 3, nonce); // timeout in 3 seconds
 }
 
 
