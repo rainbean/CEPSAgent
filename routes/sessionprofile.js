@@ -119,8 +119,9 @@ function onCommand(msg) {
 		break;
 	case constant.CMD_GET_EXT_PORT:
 		// Send UDP message to server and wait for PUSH ack
+		msg.Nonce = helper.createGUID(); // create random nonce to assure no replay.
 		if (msg.Reply && msg.Timeout > 0) {
-			pushTimer(msg.Reply, msg.Timeout, helper.createGUID()); // create random nonce to assure no replay.
+			pushTimer(msg.Reply, msg.Timeout, msg.Nonce); 
 		}
 		msg.Type = constant.REQ_GET_EXT_PORT; // reuse this message and send it as udp
 		msg.Data = helper.toBytes(helper.config.endpoint.id);
