@@ -169,7 +169,7 @@ function getUDPTestAck(callback, extPort, useSecondPort) {
 		};
 	
 	// set timer before http request to avoid racing condition
-	pushTimer(callback, 10, nonce); // timeout in 10 seconds
+	pushTimer(callback, 3, nonce); // timeout in 3 seconds
 	
 	var req = http.request(options, function(res) {
 		res.on('data', function (data) {}); // always consume data trunk
@@ -424,7 +424,7 @@ exports.init = function (subscriber) {
 			// subscribe push channel
 			push.subscribe(subscriber);
 
-			var pushServerWorkaround = true;
+			var pushServerWorkaround = false;
 			if (pushServerWorkaround) {
 				// delay one second for server ready to handle subscription channel before process
 				setTimeout(onDone, 1000);
