@@ -420,7 +420,14 @@ exports.init = function (subscriber) {
 		function(onDone) {
 			// subscribe push channel
 			push.subscribe(subscriber);
-			onDone();
+
+			var pushServerWorkaround = true;
+			if (pushServerWorkaround) {
+				// delay one second for server ready to handle subscription channel before process
+				setTimeout(onDone, 1000);
+			} else {
+				onDone();
+			}
 		},
 		registerDevice,
 		isProfileReady,

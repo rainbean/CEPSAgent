@@ -44,6 +44,7 @@ function longPolling(onNotify) {
 			
 			if (_subscribed) {
 				longPolling(onNotify);
+				//asyncInvoke(longPolling, onNotify);
 			}
 			break;
 		case 200:
@@ -53,6 +54,7 @@ function longPolling(onNotify) {
 					_queue.push(JSON.parse(data));
 					asyncInvoke(dequeue, onNotify);
 				});
+				//asyncInvoke(longPolling, onNotify);
 				return;
 			}
 			break;

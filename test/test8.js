@@ -39,7 +39,7 @@ function subscribe(onNotify) {
 		res.setEncoding('utf8');
 		//console.log(res.statusCode);
 		
-		_lastmodify = res.headers['last-modified'];
+		//_lastmodify = res.headers['last-modified'];
 		//_etag = res.headers['etag'];
 		console.log(_lastmodify);
 		console.log(_etag);
