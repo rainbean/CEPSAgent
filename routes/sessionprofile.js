@@ -210,7 +210,6 @@ function onResponse(res) {
 	}
 }
 
-
 /**
  * Init connection
  * 

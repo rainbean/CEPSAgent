@@ -406,6 +406,7 @@ function registerDevice(onDone) {
 	onDone();
 }
 
+var _isProcessing;
 /**
  * Init network profile
  * 
@@ -414,6 +415,8 @@ function registerDevice(onDone) {
 exports.init = function (subscriber) {
 	var async = require('async');
 	var push = require("./push");
+	
+	_isProcessing = true;
 	
 	async.series([
 		getServerInfo,
@@ -438,6 +441,7 @@ exports.init = function (subscriber) {
 	],
 	//optional callback
 	function(success, results) {
+		_isProcessing = false;
 		if (success !== true) {
 			// failed, success is a error message
 			console.log('Failed to create network profile!');
@@ -450,21 +454,16 @@ exports.init = function (subscriber) {
 
 
 /**
- * See if nonce is valid or has been served
- * @param nonce
- */
-function isValidNonce(nonce) {
-	// to-do implement later
-	return true;
-}
-
-/**
  * handle HTTP push notification
  * @param json JSON object 
  * @return true if message handled, false for next handler
  */
 exports.onPush = function(msg) {
 	var constant = require('./constants');
+	
+	if (!_isProcessing) {
+		return false;
+	}
 	
 	switch (msg.Type) {
 	case constant.CMD_ACK_EXT_PRT:
@@ -487,6 +486,10 @@ exports.onPush = function(msg) {
  */
 exports.onMessage = function(msg) {
 	var constant = require("./constants");
+
+	if (!_isProcessing) {
+		return false;
+	}
 
 	switch (msg.Type) {
 	case constant.REP_SEND_MSG:
