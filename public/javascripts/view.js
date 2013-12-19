@@ -66,28 +66,39 @@ var list; // list of devices
 function fnGetList() {
 	$.getJSON( "/list", function(data) {
 		list = data;
-		$('#items').combobox({
-			data:list,
-			valueField:'id',
-			textField:'name',
-			onSelect: fnSelectItemCB
-		});
+		//console.log(data);
+		var options = '<option value=""> -- </option>';
+		for (var i = 0; i < data.length; i++) {
+			if (info.endpoint.id !== data[i].id) {
+				options += '<option value="' + data[i].id + '">' + data[i].name + '</option>';
+			}
+		}
+		$("#items").html(options);
+		$("#items").change(fnSelectItemCB);
+	}).fail(function( jqxhr, textStatus, error ) {
+		var err = textStatus + ", " + error;
+		alert("Request Failed: " + err);
+		//console.log( "Request Failed: " + err );
 	});
 }
 
 function fnGetInfo() {
 	$.getJSON( "/info", function(data) {
 		info = data;
+		//console.log(data);
 	});
 }
 
-function fnSelectItemCB(item) {
+function fnSelectItemCB() {
+	if ($(this).val() === '') {
+		return;
+	}
 	$.messager.progress({
-		title:'Connecting to ' + item.name,
+		title:'Connecting to ' + $('#items :selected').text(),
 		msg:'Processing, Please Wait ...'
 	});
 
-	$.getJSON("/link/" + item.id, function(data) {
+	$.getJSON("/link/" + $(this).val(), function(data) {
 		$.messager.progress('close');
 		$('#link').text('Connected');
 		$('#container').show();
