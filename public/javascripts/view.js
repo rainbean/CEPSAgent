@@ -64,7 +64,8 @@ var info; // local config
 var list; // list of devices
 
 function fnGetList() {
-	$.getJSON( "/list", function(data) {
+	var url = 'http://' + info.server[0].address + info.server[0].cms + '/User/' + info.user.id;
+	$.getJSON( url, function(data) {
 		list = data;
 		//console.log(data);
 		var options = '<option value=""> -- </option>';
@@ -86,6 +87,11 @@ function fnGetInfo() {
 	$.getJSON( "/info", function(data) {
 		info = data;
 		//console.log(data);
+		fnGetList();
+	}).fail(function( jqxhr, textStatus, error ) {
+		var err = textStatus + ", " + error;
+		alert("Request Failed: " + err);
+		//console.log( "Request Failed: " + err );
 	});
 }
 
@@ -122,7 +128,7 @@ function fnSelectItemCB() {
 
 function fnDocumentReadyCB() {
 	fnGetInfo();
-	fnGetList();
+	//fnGetList();
 
 	$("#message").keyup(function(event){
 		if(event.keyCode == 13){
