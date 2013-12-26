@@ -125,7 +125,7 @@ function onCommand(msg) {
 		// Send UDP message to server and wait for PUSH ack
 		msg.Nonce = helper.createGUID(); // create random nonce to assure no replay.
 		if (msg.Reply && msg.Timeout > 0) {
-			pushTimer(msg.Reply, msg.Timeout, msg.Nonce); 
+			pushTimer(msg.Reply, msg.Timeout, msg.Nonce);
 		}
 		msg.Type = constant.REQ_GET_EXT_PORT; // reuse this message and send it as udp
 		msg.Data = helper.toBytes(helper.config.endpoint.id);
@@ -137,14 +137,14 @@ function onCommand(msg) {
 
 		// reply ok
 		if (t && t.Reply && t.Reply.OK) {
-			var path = helper.config.server[0].cms + t.Reply.OK + '&ExtPort=' + msg.Port;
-			var options = {
+			path = helper.config.server[0].cms + t.Reply.OK + '&ExtPort=' + msg.Port;
+			options = {
 					hostname: helper.config.server[0].address,
 					port: helper.config.server[0].port,
 					path: path,
 					method: 'GET',
 				};
-			var req = http.request(options, onResponse).on('error', function(e) {
+			req = http.request(options, onResponse).on('error', function(e) {
 				console.error("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
