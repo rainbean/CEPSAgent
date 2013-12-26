@@ -8,7 +8,8 @@ function onPush(json) {
 	var network = require("./networkprofile");
 	var session = require("./sessionprofile");
 	
-	console.log(json);
+	console.log('Received PUSH command');
+	console.debug(json);
 	
 	if (network.onPush(json)) {
 		return;
@@ -17,7 +18,7 @@ function onPush(json) {
 		return;
 	}
 
-	console.log ('Unserved push message: ' + json.type);
+	console.warn ('Unserved push message: ' + json.type);
 }
 
 /**
@@ -31,15 +32,31 @@ function onMessage(msg, remote) {
 	var network = require("./networkprofile");
 	var session = require("./sessionprofile");
 	var chat = require("./chat");
+	var _ = require("./constants");
 
-	console.log(remote.address + ':' + remote.port +' - ' + msg.length);
-    
 	// {Type:1, Data: [], Nonce:"Rose"}
 	var json = helper.getCepsUdpMsg(msg);
 	if (!json) {
 		return; // invalid message
 	}
 	json.Remote = remote;
+	
+	var cmd = '';
+	switch (json.Type) {
+	case _.REQ_SEND_MSG:
+		cmd = 'REQuest_SEND_MSG';
+		break;
+	case _.REP_SEND_MSG:
+		cmd = 'REPly_SEND_MSG';
+		break;
+	case _.REQ_GET_EXT_PORT:
+		cmd = 'REQuest_GET_EXT_PORT';
+		break;
+	case _.DATA_MSG:
+		cmd = 'DATA_MSG';
+		break;
+	}
+	console.debug('Received UDP <' + cmd +'> from ' + remote.address + ':' + remote.port);
 
 	// call handlers
 	if (network.onMessage(json)) {
@@ -53,6 +70,7 @@ function onMessage(msg, remote) {
 	if (chat.onMessage(json)) {
 		return;
 	}
+	console.warn ('Unserved udp message: ' + cmd);
 }
 
 

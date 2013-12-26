@@ -10,6 +10,7 @@ var agent = require('./routes/agent');
 var http = require('http');
 var path = require('path');
 var fs = require('fs');
+var log4js = require('log4js');
 
 var app = express();
 
@@ -24,6 +25,7 @@ app.use(express.urlencoded());
 app.use(express.methodOverride());
 app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
+log4js.replaceConsole();
 
 // development only
 if ('development' === app.get('env')) {

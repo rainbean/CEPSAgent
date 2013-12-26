@@ -59,12 +59,12 @@ function longPolling(onNotify) {
 			}
 			break;
 		default:
-			console.log('Got subscription error: ' + res.statusCode);
+			console.warn('Got subscription error: ' + res.statusCode);
 			break;
 		}
 		res.on('data', function (data) {}); // always consume data trunk
 	}).on('error', function(e) {
-		console.log("Got subscription error: " + e.message);
+		console.error("Got subscription error: " + e.message);
 	});
 	req.end();
 }

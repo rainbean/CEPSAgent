@@ -43,8 +43,9 @@ function pushTimer(reply, timeout, nonce) {
 					path: path,
 					method: 'GET',
 				};
+			console.warn('Timeout, send error to ' + path);
 			var req = http.request(options, onResponse).on('error', function(e) {
-				console.log("Failed to send HTTP request, error: " + e.message);
+				console.error("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
 			});
@@ -68,6 +69,7 @@ function onCommand(msg) {
 	var options;
 	var req;
 
+	console.log('Received CMD <' + msg.Type + '>');
 	switch (msg.Type) {
 	case constant.CMD_LISTEN_MSG:
 		// create new timer with timeout
@@ -85,7 +87,7 @@ function onCommand(msg) {
 					method: 'GET',
 				};
 			req = http.request(options, onResponse).on('error', function(e) {
-				console.log("Failed to send HTTP request, error: " + e.message);
+				console.error("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
 			});
@@ -107,7 +109,7 @@ function onCommand(msg) {
 					method: 'GET',
 				};
 			req = http.request(options, onResponse).on('error', function(e) {
-				console.log("Failed to send HTTP request, error: " + e.message);
+				console.error("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
 			});
@@ -115,6 +117,8 @@ function onCommand(msg) {
 		}
 		break;
 	case constant.CMD_SAVE_SESSION:
+		console.log('Session profile establish!');
+		console.debug(msg);
 		onInitDoneCallback(null, msg);
 		break;
 	case constant.CMD_GET_EXT_PORT:
@@ -141,7 +145,7 @@ function onCommand(msg) {
 					method: 'GET',
 				};
 			var req = http.request(options, onResponse).on('error', function(e) {
-				console.log("Failed to send HTTP request, error: " + e.message);
+				console.error("Failed to send HTTP request, error: " + e.message);
 				// abort session negociation on error
 				onInitDoneCallback(e);
 			});
@@ -182,7 +186,7 @@ function onResponse(res) {
 		console.warn('peer not exist');
 		break;
 	default:
-		console.log('Server error code:' + res.statusCode);
+		console.error('Server error code:' + res.statusCode);
 		break;
 	}
 	
@@ -200,7 +204,7 @@ function onResponse(res) {
 		if (res.statusCode === 200) {
 			// handle HTTP body as json command
 			var json = JSON.parse(data);
-			console.log(json);
+			//console.log(json);
 			onCommand(json);
 		}
 	});
@@ -223,6 +227,7 @@ exports.init = function (eid, onDone) {
 
 	_onDoneCB = onDone;
 	
+	console.log('Start session negociation');
 	// ask server to init session negociation
 	// GET /v1/SessionProfile/{SocketType}/{Requestor's EndpointID}/{Destination's EndpointID}
 	var path = helper.config.server[0].cms + '/SessionProfile/UDP/' + helper.config.endpoint.id + '/' + eid;
@@ -233,7 +238,7 @@ exports.init = function (eid, onDone) {
 			method: 'GET',
 		};
 	var req = http.request(options, onResponse).on('error', function(e) {
-		console.log("Failed to send HTTP request, error: " + e.message);
+		console.error("Failed to send HTTP request, error: " + e.message);
 		// abort session negociation on error
 		onInitDoneCallback(e);
 	});
@@ -268,7 +273,7 @@ exports.onMessage = function(msg) {
 
 		// reply ok
 		if (t && t.Reply && t.Reply.OK) {
-			//console.log('Get UDP REQ_SEND_MSG, send ok reply to server');
+			console.log('Get UDP <REQuest_SEND_MSG>, send ok reply to server');
 			var path = helper.config.server[0].cms + t.Reply.OK + '&MsgSrcIP=' + msg.Remote.address + '&MsgSrcPort=' + msg.Remote.port;
 			var options = {
 					hostname: helper.config.server[0].address,

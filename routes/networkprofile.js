@@ -45,13 +45,13 @@ function getServerInfo(onDone) {
 			});
 			break;
 		default:
-			console.log('Got server info error: ' + res.statusCode);
+			console.error('Got server info error: ' + res.statusCode);
 			res.on('data', function (data) {}); // always consume data trunk
 			onDone('error');
 			break;
 		}
 	}).on('error', function(e) {
-		console.log("Failed to send HTTP request, error: " + e.message);
+		console.error("Failed to send HTTP request, error: " + e.message);
 		onDone('error');
 	});
 }
@@ -97,16 +97,17 @@ function saveProfile(onDone) {
 		case 200:
 		case 202:
 			console.log('Save network profile to server correctly');
+			console.debug(_profile);
 			onDone(true);
 			break;
 		default:
-			console.log('Failed to save network profile, err=' + res.statusCode);
+			console.error('Failed to save network profile, err=' + res.statusCode);
 			onDone('error');
 			break;
 		}
 		res.on('data', function (data) {}); // always consume data trunk
 	}).on('error', function(e) {
-		console.log("Network profile error: " + e.message);
+		console.error("Network profile error: " + e.message);
 		onDone('error');
 	});
 	req.write(datastr); // write data to request body
@@ -178,13 +179,13 @@ function getUDPTestAck(callback, extPort, useSecondPort) {
 		case 202:
 			break;
 		default:
-			console.log('Failed to send HTTP request, error: ' + res.statusCode);
+			console.error('Failed to send HTTP request, error: ' + res.statusCode);
 			popTimer(nonce); // remove timer
 			callback(); // empty argument means error
 			break;
 		}
 	}).on('error', function(e) {
-		console.log("Failed to send HTTP request, error: " + e.message);
+		console.error("Failed to send HTTP request, error: " + e.message);
 		// abort session negociation on error
 		popTimer(nonce); // remove timer
 		callback(); // empty argument means error
@@ -444,7 +445,7 @@ exports.init = function (subscriber) {
 		_isProcessing = false;
 		if (success !== true) {
 			// failed, success is a error message
-			console.log('Failed to create network profile!');
+			console.error('Failed to create network profile!');
 			process.exit(1);
 		} else {
 			console.log('Network profile is ready, please connect to http://localhost:8000/');
