@@ -117,7 +117,7 @@ function onCommand(msg) {
 		}
 		break;
 	case constant.CMD_SAVE_SESSION:
-		console.log('Session profile establish!');
+		console.log('Session profile established!');
 		console.debug(msg);
 		onInitDoneCallback(null, msg);
 		break;
