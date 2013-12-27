@@ -445,7 +445,7 @@ exports.init = function (subscriber) {
 		_isProcessing = false;
 		if (success !== true) {
 			// failed, success is a error message
-			console.fatal('Failed to create network profile!');
+			console.error('Failed to create network profile!');
 			process.exit(1);
 		} else {
 			console.log('Network profile is ready, please connect to http://localhost:8000/');
